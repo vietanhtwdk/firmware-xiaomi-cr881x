@@ -1,0 +1,144 @@
+diff -ruN a/etc/config/misc b/etc/config/misc
+--- a/etc/config/misc	2026-10-28 17:35:30.114055628 +0000
++++ b/etc/config/misc	2026-10-28 17:35:30.126381886 +0000
+@@ -142,7 +142,7 @@
+ 	option flag31 0
+ 
+ config misc ota_pred
+-	option download 1
++	option download 0
+ 
+ config misc http_proxy
+ 	option fastpath "none"
+diff -ruN a/etc/config/otapred b/etc/config/otapred
+--- a/etc/config/otapred	2026-10-28 17:35:30.084129708 +0000
++++ b/etc/config/otapred	2026-10-28 17:35:30.085179531 +0000
+@@ -1,4 +1,4 @@
+ 
+ config ota settings
+-	option enabled 1
++	option enabled 0
+ 
+diff -ruN a/etc/config/vas b/etc/config/vas
+--- a/etc/config/vas	2026-10-28 17:35:30.089386166 +0000
++++ b/etc/config/vas	2026-10-28 17:35:30.090351271 +0000
+@@ -15,6 +15,6 @@
+     option status ''
+ 
+ config service 'auto_upgrade'
+-    option on 'uci set otapred.settings.auto=1; uci commit otapred'
++    option on 'uci set otapred.settings.auto=0; uci commit otapred'
+     option off 'uci set otapred.settings.auto=0; uci commit otapred'
+     option status 'uci get otapred.settings.auto 2>/dev/null'
+diff -ruN a/usr/lib/lua/luci/view/web/inc/sysinfo.htm b/usr/lib/lua/luci/view/web/inc/sysinfo.htm
+--- a/usr/lib/lua/luci/view/web/inc/sysinfo.htm	2026-10-28 17:35:30.095492102 +0000
++++ b/usr/lib/lua/luci/view/web/inc/sysinfo.htm	2026-10-28 17:35:30.129011360 +0000
+@@ -20,38 +20,44 @@
+ local isMesh = (netmod == 3 or netmod == 4) and true  or  false
+ %>
+ <div class="mod-upgrade" data="<%=netmod%>">
+-    <div class="hd"><h3><%:升级检测%></h3></div>
++    <div class="hd"><h3><%:System SW Info.%></h3></div>
+     <div class="bd">
+-            <h4><%:系统版本%></h4>
+-            <p id="upgradeinfo"></p>
+-            <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:立即升级%></span></a></p>
+-            <p><a href="#" id="btnUpload" class="btn btn-dft btn-l"><span><%:手动升级%></span></a></p>
+-            <div class="logs" style="display:none;">
+-                <h4><%:更新日志%></h4>
++            <h4><%:System version%></h4>
++            <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
++            <!--<p id="upgradeinfo"></p>-->
++            <!--
++            <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:Upgrade immediately%></span></a></p>
++            <p><a style="display:none;" href="#" id="btnUpload" class="btn btn-dft btn-l"><span><%:Manually upgrade%></span></a></p>
++            -->
++            <!--<div class="logs" style="display:none;">
++                <h4><%:Changelog%></h4>
+                 <div id="changelog" style="display:none;">
+                     <iframe name="setting" id="changelogUrl" style="width:100%; border:0;background:none;" src="about:blank" frameborder="0" height="500" scrolling="yes"></iframe>
+                 </div>
+             </div>
++            -->
+         </div>
+     </div>
+ 
+-
++<!--
+ <div class="mod-uploadlog" >
+     <div class="hd">
+         <h3><%:路由器日志%></h3>
+-<!--        <div><%=features["system"]["downloadlogs"]%></div>-->
++        <div><%=features["system"]["downloadlogs"]%></div>
+     </div>
+     <div class="bd">
+-<!--        <div style="margin-bottom:15px;"><button type="button" id="btnUploadlog" class="btn btn-primary btn-l"><span><%:上传日志%></span></button></div>-->
++        <div style="margin-bottom:15px;"><button type="button" id="btnUploadlog" class="btn btn-primary btn-l"><span><%:上传日志%></span></button></div>
+ 
+         <div><button type="button" id="btnDownloadlog" class="btn btn-primary btn-l"><span><%:下载日志%></span></button></div>
+ 
+ 
+-<!--        <%if features["system"]["downloadlogs"] == "1" then%>-->
+-<!--        <div><button type="button" id="btnDownloadlog" class="btn btn-primary btn-l"><span><%:下载日志%></span></button></div>-->
+-<!--        <%end%>-->
++        <%if features["system"]["downloadlogs"] == "1" then%>
++        <div><button type="button" id="btnDownloadlog" class="btn btn-primary btn-l"><span><%:下载日志%></span></button></div>
++       <%end%>
+     </div>
+ </div>
++-->
++
+ 
+ <div class="mod-uploadlog">
+     <div class="hd">
+diff -ruN a/usr/lib/lua/luci/view/web/inc/sysinfo_ap.htm b/usr/lib/lua/luci/view/web/inc/sysinfo_ap.htm
+--- a/usr/lib/lua/luci/view/web/inc/sysinfo_ap.htm	2026-10-28 17:35:30.102004490 +0000
++++ b/usr/lib/lua/luci/view/web/inc/sysinfo_ap.htm	2026-10-28 17:35:30.129215532 +0000
+@@ -19,24 +19,28 @@
+ 
+ %>
+ <div class="mod-upgrade">
+-    <div class="hd"><h3><%:升级检测%></h3></div>
++    <div class="hd"><h3><%:System SW Info.%></h3></div>
+     <!--    暂时不做判断mesh都显示 下面的普通路由器的功能-->
+ 
+     <div class="bd">
+-            <h4><%:系统版本%></h4>
+-            <p id="upgradeinfo"></p>
+-            <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:立即升级%></span></a></p>
+-            <p><a href="#" id="btnUpload" class="btn btn-dft btn-l"><span><%:手动升级%></span></a></p>
+-            <div class="logs" style="display:none;">
+-                <h4><%:更新日志%></h4>
+-                <div id="changelog" style="display:none;">
+-                    <iframe name="setting" id="changelogUrl" style="width:100%; border:0;background:none;" src="about:blank" frameborder="0" height="500" scrolling="yes"></iframe>
+-                </div>
++        <h4><%:System version%></h4>
++        <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
++        <!--<p id="upgradeinfo"></p>-->
++        <!--
++        <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:Upgrade immediately%></span></a></p>
++        <p><a style="display:none;" href="#" id="btnUpload" class="btn btn-dft btn-l"><span><%:Manually upgrade%></span></a></p>
++        -->
++        <!--<div class="logs" style="display:none;">
++            <h4><%:Changelog%></h4>
++            <div id="changelog" style="display:none;">
++                <iframe name="setting" id="changelogUrl" style="width:100%; border:0;background:none;" src="about:blank" frameborder="0" height="500" scrolling="yes"></iframe>
+             </div>
+         </div>
++        -->
++    </div>
+     </div>
+ 
+-
++<!--
+ <div class="mod-uploadlog">
+     <div class="hd">
+         <h3><%:路由器日志%></h3>
+@@ -45,6 +49,7 @@
+         <div><button type="button" id="btnDownloadlog" class="btn btn-primary btn-l"><span><%:下载日志%></span></button></div>
+     </div>
+ </div>
++-->
+ 
+ <div class="mod-uploadlog">
+     <div class="hd">

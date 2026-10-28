@@ -1,0 +1,51 @@
+diff -ruN a/etc/init.d/boot_check b/etc/init.d/boot_check
+--- a/etc/init.d/boot_check	2026-10-28 17:35:30.157962487 +0000
++++ b/etc/init.d/boot_check	2026-10-28 17:35:30.196682677 +0000
+@@ -124,6 +124,10 @@
+ 	echo "BOOTCHECKCODE=0;" > $BOOTCHECKCODEFILE	
+ 	echo "boot_done" > /tmp/boot_check_done
+ 	elog "Booting up finished."
++	local port
++	for port in 0 1 2 3; do
++		switch_ctl phy $port power 1
++	done
+ }
+ 
+ stop() {
+diff -ruN a/etc/init.d/dropbear b/etc/init.d/dropbear
+--- a/etc/init.d/dropbear	2026-10-28 17:35:30.162246216 +0000
++++ b/etc/init.d/dropbear	2026-10-28 17:35:30.196730172 +0000
+@@ -130,11 +130,6 @@
+ start_service()
+ {
+ 	# 稳定版不能打开ssh服务
+-	flg_ssh=`nvram get ssh_en`
+-	channel=`/sbin/uci get /usr/share/xiaoqiang/xiaoqiang_version.version.CHANNEL`
+-	if [ "$flg_ssh" != "1" -o "$channel" = "release" ]; then
+-		return 0
+-	fi
+ 
+ 	[ -s /etc/dropbear/dropbear_rsa_host_key ] || keygen
+ 
+diff -ruN a/etc/init.d/system b/etc/init.d/system
+--- a/etc/init.d/system	2026-10-28 17:35:30.143891671 +0000
++++ b/etc/init.d/system	2026-10-28 17:35:30.196641071 +0000
+@@ -15,13 +15,11 @@
+ }
+ 
+ set_user(){
+-	local inited=$(uci -q get xiaoqiang.common.INITTED)
+-	[ "$inited" != "YES" ] && {
+-		local init_pwd=`mkxqimage -I`
+-		[ -n "$init_pwd" ] && {
+-			(echo $init_pwd; sleep 1; echo $init_pwd) | passwd root
+-		}
+-	}
++	# root password comes from the image (build.sh), do not reset it
++	local port
++	for port in 0 1 2 3; do
++		switch_ctl phy $port power 0
++	done
+ }
+ 
+ system_config() {

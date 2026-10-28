@@ -1,0 +1,76 @@
+diff -ruN a/usr/sbin/gpio b/usr/sbin/gpio
+--- a/usr/sbin/gpio	2026-10-28 17:35:30.029656183 +0000
++++ b/usr/sbin/gpio	2026-10-28 17:35:30.031140437 +0000
+@@ -23,24 +23,24 @@
+ 
+ 	case $3 in
+ 		2 )
+-			label="led_yellow"
+-			echo "none" > /sys/class/leds/led_blue/trigger
+-			echo 0 > /sys/class/leds/led_blue/brightness
++			label="sys_red"
++			echo "none" > /sys/class/leds/sys_blue/trigger
++			echo 0 > /sys/class/leds/sys_blue/brightness
+ 			;;
+ 		3 )
+-			label="led_blue"
+-			echo "none" > /sys/class/leds/led_yellow/trigger
+-			echo 0 > /sys/class/leds/led_yellow/brightness
++			label="sys_blue"
++			echo "none" > /sys/class/leds/sys_red/trigger
++			echo 0 > /sys/class/leds/sys_yellow/brightness
+ 			;;
+         4 )
+-            label="net_yellow"
++            label="net_red"
+             echo "none" > /sys/class/leds/net_blue/trigger
+             echo 0 > /sys/class/leds/net_blue/brightness
+             ;;
+         5 )
+             label="net_blue"
+-            echo "none" > /sys/class/leds/net_yellow/trigger
+-            echo 0 > /sys/class/leds/net_yellow/brightness
++            echo "none" > /sys/class/leds/net_red/trigger
++            echo 0 > /sys/class/leds/net_red/brightness
+             ;;
+ 
+ 		* )
+@@ -63,22 +63,22 @@
+ 
+ 	case $1 in
+ 		1 )
+-			label="led_red"
++			label="sys_yellow"
+ 			;;
+ 		2 )
+-			label="led_yellow"
++			label="sys_red"
+ 			;;
+ 		3 )
+-			label="led_blue"
++			label="sys_blue"
+ 			;;
+ 		4 )
+-			label="net_yellow"
++			label="net_red"
+ 			;;
+ 		5 )
+ 			label="net_blue"
+ 			;;
+ 		6 )
+-			label="led_ant"
++			label="sys_ant"
+ 			;;
+ 		* )
+ 			exit 255
+@@ -97,8 +97,8 @@
+ 				echo $((!$2)) > /sys/class/leds/${label}/brightness
+ 				;;
+ 			1 )
+-				echo $((!$2)) > /sys/class/leds/led_yellow/brightness
+-				echo $((!$2)) > /sys/class/leds/led_blue/brightness
++				echo $((!$2)) > /sys/class/leds/sys_red/brightness
++				echo $((!$2)) > /sys/class/leds/sys_blue/brightness
+ 				;;
+ 		esac
+ 	}

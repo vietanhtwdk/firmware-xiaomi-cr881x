@@ -1,0 +1,436 @@
+diff -ruN a/etc/config/misc b/etc/config/misc
+--- a/etc/config/misc	2026-10-28 17:35:30.007853007 +0000
++++ b/etc/config/misc	2026-10-28 17:35:30.009423921 +0000
+@@ -81,9 +81,9 @@
+ config misc sw_reg
+ 	option sw_lan_devid '1'
+ 	option sw_wan_devid '1'
+-	option sw_lan_ports	'1 2 3'
+-	option sw_wan_port	'4'
+-	option sw_lan_cpu_port '6'
++	option sw_lan_ports	'0 1 2'
++	option sw_wan_port	'3'
++	option sw_lan_cpu_port '5'
+ 
+ config misc quickpass
+ 	option ctf 0
+diff -ruN a/etc/config/network b/etc/config/network
+--- a/etc/config/network	2026-10-28 17:35:29.952939342 +0000
++++ b/etc/config/network	2026-10-28 17:35:29.954043917 +0000
+@@ -20,12 +20,12 @@
+ config switch_vlan
+         option device 'switch1'
+         option vlan '1'
+-        option ports '1 2 3 6'
++        option ports '0 1 2 5'
+ 		
+ config switch_vlan
+         option device 'switch1'
+         option vlan '2'
+-        option ports '4 5'		
++        option ports '3 4'		
+ 
+ config interface 'lan'
+         option ifname 'eth1'
+diff -ruN a/etc/config/vlan_service b/etc/config/vlan_service
+--- a/etc/config/vlan_service	2026-10-28 17:35:29.957710582 +0000
++++ b/etc/config/vlan_service	2026-10-28 17:35:29.960714606 +0000
+@@ -32,12 +32,12 @@
+ 
+ config interface lan1
+     option type 'internet'
+-    option port '1'
++    option port '0'
+ 
+ config interface lan2
+     option type 'internet'
+-    option port '2'
++    option port '1'
+ 
+ config interface lan3
+     option type 'internet'
+-    option port '3'
+\ No newline at end of file
++    option port '2'
+\ No newline at end of file
+diff -ruN a/etc/hotplug.d/iface/10-phy_check.sh b/etc/hotplug.d/iface/10-phy_check.sh
+--- a/etc/hotplug.d/iface/10-phy_check.sh	2026-10-28 17:35:29.965805973 +0000
++++ b/etc/hotplug.d/iface/10-phy_check.sh	2026-10-28 17:35:29.967135557 +0000
+@@ -6,7 +6,7 @@
+ 	[ -z "$wan_speed" -o $wan_speed -eq 0 ] && return
+ 
+ 	wan_port=$(uci -q get misc.sw_reg.sw_wan_port)
+-	[ -z "$wan_port" ] && wan_port=4
++	[ -z "$wan_port" ] && wan_port=3
+ 
+ 	cur_wan_speed=$(swconfig dev switch1 port $wan_port get link |  cut -d ":" -f 4 | cut -d "b" -f 1)
+ 	[ -z "$cur_wan_speed" ] && return
+diff -ruN a/lib/network/network_func_lib.sh b/lib/network/network_func_lib.sh
+--- a/lib/network/network_func_lib.sh	2026-10-28 17:35:29.972579340 +0000
++++ b/lib/network/network_func_lib.sh	2026-10-28 17:35:30.013476573 +0000
+@@ -24,7 +24,7 @@
+ 
+     [ "$vlan_internet_enabled" -ne 1 ] && return 0
+ 
+-    swconfig dev switch1 vlan ${wan_vlan_id} set ports "4 5t"
++    swconfig dev switch1 vlan ${wan_vlan_id} set ports "3 4t"
+     swconfig dev switch1 set apply
+ }
+ 
+@@ -70,12 +70,12 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         commit network
+ EOF
+ }
+@@ -110,12 +110,12 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         commit network
+ EOF
+ }
+@@ -165,12 +165,12 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         commit network
+ 
+         set dhcp.lan.ignore=1;
+@@ -233,12 +233,12 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         commit network
+ 
+         delete dhcp.lan.ignore;
+@@ -273,26 +273,28 @@
+         set network.eth1_2.ifname='eth1.2'
+         set network.eth1_3=interface
+         set network.eth1_3.ifname='eth1.3'
++        set network.eth1_4=interface
++        set network.eth1_4.ifname='eth1.4'
+         add network switch_vlan
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 6t'
++        set network.@switch_vlan[0].ports='0 5t'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='2 6t'
++        set network.@switch_vlan[1].ports='1 5t'
+         add network switch_vlan
+         set network.@switch_vlan[2].device='switch1'
+         set network.@switch_vlan[2].vlan='3'
+         set network.@switch_vlan[2].vid='3'
+-        set network.@switch_vlan[2].ports='3 6t'
++        set network.@switch_vlan[2].ports='2 5t'
+         add network switch_vlan
+         set network.@switch_vlan[3].device='switch1'
+         set network.@switch_vlan[3].vlan='4'
+         set network.@switch_vlan[3].vid='4'
+-        set network.@switch_vlan[3].ports='4 5'
++        set network.@switch_vlan[3].ports='3 4'
+         set network.lan.ifname='eth0 eth1.1 eth1.2 eth1.3'
+         commit network
+ 
+@@ -308,9 +310,9 @@
+ 	local reload_need="$1"
+ 	
+ 	[ "1" == "$(uci -q get network.@switch_vlan[0].vlan)" -a \
+-	  "1 2 3 6" ==  "$(uci -q get network.@switch_vlan[0].ports)" -a \
++	  "0 1 2 5" ==  "$(uci -q get network.@switch_vlan[0].ports)" -a \
+ 	  "2" == "$(uci -q get network.@switch_vlan[1].vlan)" -a \
+-	  "4 5" ==  "$(uci -q get network.@switch_vlan[1].ports)" ] && {
++	  "3 4" ==  "$(uci -q get network.@switch_vlan[1].ports)" ] && {
+ 		log "=== default router enabled, skip ==="
+ 		return
+ 	}	
+@@ -322,6 +324,7 @@
+         delete network.@switch_vlan[2]
+         delete network.@switch_vlan[1]
+         delete network.@switch_vlan[0]
++        delete network.eth0_1
+         delete network.eth0_2
+         delete network.eth0_3
+         delete network.eth0_4
+@@ -330,22 +333,22 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         set network.lan.ifname='eth1'
+         set network.wan.ifname='eth0'
+         commit network
+ EOF
+ 
+ 	# set port ifname
+-	echo eth0 > /proc/portmap/4
+-	echo 0 > /proc/portmap/3
++	echo eth0 > /proc/portmap/3
+ 	echo 0 > /proc/portmap/2
+ 	echo 0 > /proc/portmap/1
++	echo 0 > /proc/portmap/0
+ 	
+ 	# set eth1 linkup always
+ 	echo eth1 > /proc/portmap/10
+@@ -366,7 +369,7 @@
+ 	local proto=""
+ 	local superlan=0
+ 
+-	[ -z "$wan_port" ] && wan_port=4
++	[ -z "$wan_port" ] && wan_port=3
+ 
+ 	wan_link=$(ethstatus | grep "port $wan_port" | grep -q up && echo 1 || echo 0)
+ 	proto=$(uci -q get network.wan.proto)
+@@ -387,8 +390,8 @@
+ 	echo $superlan
+ }
+ 
+-# lan1 <--> cpu port 6
+-# lan2 lan3 wan	 <--> cpu port 5
++# lan1 <--> cpu port 5
++# lan2 lan3 wan	 <--> cpu port 4
+ network_router_superlan()
+ {
+ 	local reload_need="$1"
+@@ -417,22 +420,22 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vlan='1'
+         set network.@switch_vlan[0].vid='1'
+-        set network.@switch_vlan[0].ports='1 6'
++        set network.@switch_vlan[0].ports='0 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vlan='2'
+         set network.@switch_vlan[1].vid='2'
+-        set network.@switch_vlan[1].ports='2 5t'
++        set network.@switch_vlan[1].ports='1 4t'
+         add network switch_vlan
+         set network.@switch_vlan[2].device='switch1'
+         set network.@switch_vlan[2].vlan='3'
+         set network.@switch_vlan[2].vid='3'
+-        set network.@switch_vlan[2].ports='3 5t'
++        set network.@switch_vlan[2].ports='2 4t'
+         add network switch_vlan
+         set network.@switch_vlan[3].device='switch1'
+         set network.@switch_vlan[3].vlan='4'
+         set network.@switch_vlan[3].vid='4'
+-        set network.@switch_vlan[3].ports='4 5t'
++        set network.@switch_vlan[3].ports='3 4t'
+         set network.eth0_2=interface
+         set network.eth0_2.ifname='eth0.2'
+         set network.eth0_3=interface
+@@ -445,10 +448,10 @@
+ EOF
+ 
+ 	# set port ifname
+-	echo eth0.4 > /proc/portmap/4
+-	echo eth0.3 > /proc/portmap/3
+-	echo eth0.2 > /proc/portmap/2
+-	echo eth1 > /proc/portmap/1
++	echo eth0.4 > /proc/portmap/3
++	echo eth0.3 > /proc/portmap/2
++	echo eth0.2 > /proc/portmap/1
++	echo eth1 > /proc/portmap/0
+ 
+ 	[ "$reload_need" == "1" ] && {
+ 		include /lib/network
+@@ -468,15 +471,15 @@
+ 	local mode=$(uci -q get xiaoqiang.common.NETMODE)
+ 
+ 	# config port and interface map
+-	for port in 1 2 3
++	for port in 0 1 2
+ 	do
+ 		[ -f /proc/portmap/$port ] && echo 0 > /proc/portmap/$port
+ 	done
+-	echo eth0 > /proc/portmap/4
++	echo eth0 > /proc/portmap/3
+ 
+ 	case "$mode" in
+ 		"whc_re")
+-			for port in 1 2 3
++			for port in 0 1 2
+ 			do
+ 				[ -f /proc/portmap/$port ] && echo "eth1.${port}" > /proc/portmap/$port
+ 			done
+@@ -498,7 +501,7 @@
+ 
+ 		"wifiapmode"|"lanapmode")
+ 			# config port and interface map
+-			[ -f /proc/portmap/4 ] && echo 0 > /proc/portmap/4
++			[ -f /proc/portmap/3 ] && echo 0 > /proc/portmap/3
+ 			
+ 			# set eth0,eth1 linkup always
+ 			echo eth0 > /proc/portmap/10
+diff -ruN a/lib/xq-misc/vlan_service_product.sh b/lib/xq-misc/vlan_service_product.sh
+--- a/lib/xq-misc/vlan_service_product.sh	2026-10-28 17:35:29.979480779 +0000
++++ b/lib/xq-misc/vlan_service_product.sh	2026-10-28 17:35:29.980809624 +0000
+@@ -2,18 +2,18 @@
+ # vlan_service
+ 
+ # different product, different value
+-STRING_IF_WAN="eth0"
++STRING_IF_WAN="eth0.1"
+ STRING_IF_LAN="eth1"
+ STRING_IF_LAN1="eth1"
+ STRING_IF_LAN2="eth1"
+ STRING_IF_LAN3="eth1"
+ 
+ STRING_WAN_SWITCH="switch1"
+-STRING_WAN_PORT="4"
+-STRING_WAN_CPU_PORT="5"
++STRING_WAN_PORT="3"
++STRING_WAN_CPU_PORT="4"
+ 
+ STRING_LAN_SWITCH="switch1"
+-STRING_LAN_CPU_PORT="6"
++STRING_LAN_CPU_PORT="5"
+ 
+ # const string
+ TAG="t"
+@@ -160,52 +160,6 @@
+ EOF
+     }
+ 
+-    [ -z "$service_vid" ] && vs_logger "create switch vlan: ports=$ports, vid=$vid" && return
+-    local forcemode_name="$STRING_EXT_FORCEMODE_PREFIX"
+-    local entry_name="$STRING_EXT_ENTRY_PREFIX""$switch""_$service_vid"
+-    local member_name="$STRING_EXT_MEMBER_PREFIX""$switch""_$service_vid"
+-
+-     # switch_ext: VlanEntry
+-    vs_is_config_exist "$entry_name" || {
+-        uci -q batch <<EOF >/dev/null
+-            set network.$entry_name="switch_ext"
+-            set network.$entry_name.device="$switch"
+-            set network.$entry_name.name="VlanEntry"
+-            set network.$entry_name.vlan_id="$service_vid"
+-            commit network
+-EOF
+-    }
+-
+-    # switch_ext: ForceMode and VlanMember
+-    for port in $ports; do
+-        port="${port:0:1}"
+-
+-        forcemode_name="$STRING_EXT_FORCEMODE_PREFIX""$switch""_p$port"
+-        vs_is_config_exist "$forcemode_name" || {
+-            uci -q batch <<EOF >/dev/null
+-                set network.$forcemode_name="switch_ext"
+-                set network.$forcemode_name.device="$switch"
+-                set network.$forcemode_name.name="PortvlanForceMode"
+-                set network.$forcemode_name.port_id="$port"
+-                set network.$forcemode_name.force_mode="enable"
+-                commit network
+-EOF
+-        }
+-
+-        member_name="$STRING_EXT_MEMBER_PREFIX""$switch""_$service_vid""_p$port"
+-        vs_is_config_exist "$member_name" || {
+-            uci -q batch <<EOF >/dev/null
+-                set network.$member_name="switch_ext"
+-                set network.$member_name.device="$switch"
+-                set network.$member_name.name="VlanMember"
+-                set network.$member_name.vlan_id="$service_vid"
+-                set network.$member_name.port_id="$port"
+-                set network.$member_name.tag_mode="unmodified"
+-                commit network
+-EOF
+-        }
+-    done
+-
+     vs_logger "create special switch vlan: ports=$ports, vid=$vid, service_vid=$service_vid"
+     return
+ }
+@@ -228,7 +182,7 @@
+ 
+ # revert the network
+ vs_revert_network(){
+-    vs_change_wan_if "$STRING_IF_WAN"
++    vs_change_wan_if eth0
+     vs_change_lan_if "$STRING_IF_LAN"
+ 
+     uci -q batch <<EOF >/dev/null
+@@ -236,12 +190,12 @@
+         set network.@switch_vlan[0].device='switch1'
+         set network.@switch_vlan[0].vid='1'
+         set network.@switch_vlan[0].vlan='1'
+-        set network.@switch_vlan[0].ports='1 2 3 6'
++        set network.@switch_vlan[0].ports='0 1 2 5'
+         add network switch_vlan
+         set network.@switch_vlan[1].device='switch1'
+         set network.@switch_vlan[1].vid='2'
+         set network.@switch_vlan[1].vlan='2'
+-        set network.@switch_vlan[1].ports='4 5'
++        set network.@switch_vlan[1].ports='3 4'
+         commit network
+ EOF
+     return
+diff -ruN a/sbin/ethstatus b/sbin/ethstatus
+--- a/sbin/ethstatus	2026-10-28 17:35:30.000063073 +0000
++++ b/sbin/ethstatus	2026-10-28 17:35:30.005591941 +0000
+@@ -3,7 +3,7 @@
+ wan_port=$(uci -q get misc.sw_reg.sw_wan_port)
+ otype=""
+ 
+-for port in 1 2 3 4; do
++for port in 0 1 2 3; do
+     status=`swconfig dev switch1 port $port get link | grep "link:up"`
+     [ "$port" = "$wan_port" ] && otype="wan" || otype=""
+ 
+diff -ruN a/usr/sbin/vlan_service.sh b/usr/sbin/vlan_service.sh
+--- a/usr/sbin/vlan_service.sh	2026-10-28 17:35:29.987487581 +0000
++++ b/usr/sbin/vlan_service.sh	2026-10-28 17:35:29.994171506 +0000
+@@ -97,7 +97,7 @@
+         [ "$wan_egress_tag" = "1" ] && wan_port="$wan_port""$TAG"
+ 
+         IF_WAN="$STRING_IF_WAN"".""$vid"
+-        vs_create_vlan "internet" "$STRING_WAN_SWITCH" "$STRING_WAN_PORTS" "$NUM_VID" "$vid" "$STRING_IF_WAN"".$vid" "$priority"
++        vs_create_vlan "internet" "$STRING_WAN_SWITCH" "$STRING_WAN_PORTS_TAG" "$NUM_VID" "$vid" "$STRING_IF_WAN"".$vid" "$priority"
+     else
+         IF_WAN="$STRING_IF_WAN"".""$NUM_VID"
+         vs_create_vlan "internet" "$STRING_WAN_SWITCH" "$STRING_WAN_PORTS_TAG" "$NUM_VID" "$NULL" "$STRING_IF_WAN"".$NUM_VID" "$priority"

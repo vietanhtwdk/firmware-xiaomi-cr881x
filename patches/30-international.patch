@@ -1,0 +1,73 @@
+diff -ruN a/etc/config/system b/etc/config/system
+--- a/etc/config/system	2026-10-28 17:35:30.056043633 +0000
++++ b/etc/config/system	2026-10-28 17:35:30.057236416 +0000
+@@ -7,8 +7,8 @@
+ 	option cronloglevel '9'
+ 
+ config hostdns 'netdt'
+-	option cn_domain 'www.baidu.com www.taobao.com'
+-	option cn_dns '180.76.76.76 114.114.114.114'
++	option cn_domain 'www.google.com www.facebook.com'
++	option cn_dns '1.1.1.1 1.0.0.1'
+ 	option world_domain 'www.google.com www.facebook.com'
+ 	option world_dns '8.8.8.8 8.8.4.4'
+ 
+@@ -19,6 +19,5 @@
+ 	list server '3.pool.ntp.org'
+ 	list server '3.asia.pool.ntp.org'
+ 	list server '0.asia.pool.ntp.org'
+-	list server '0.cn.pool.ntp.org'
+ 	option enabled 1
+ 	option enable_server 0
+diff -ruN a/usr/lib/lua/luci/view/web/sysauth.htm b/usr/lib/lua/luci/view/web/sysauth.htm
+--- a/usr/lib/lua/luci/view/web/sysauth.htm	2026-10-28 17:35:30.064164278 +0000
++++ b/usr/lib/lua/luci/view/web/sysauth.htm	2026-10-28 17:35:30.066664461 +0000
+@@ -89,36 +89,36 @@
+         </div>
+ 
+         <div class="mod-guide mod-guide-admin mod-guide-phone" id="admin-mob" style="display:none;">
+-                    <p class="tit font18"><%:使用小米WiFi APP管理您的路由器%></p>
++                    <p class="tit font18"><%:Use MiHome App to manage your router%></p>
+                     <div class="hr"></div>
+                     <ul class="info pic-line clearfix">
+                         <li>
+                             <div class="ico wifi"></div>
+-                            <div>易用</div>
+-                            <div class="des">全新小米WiFi APP 极简操作，享受生活</div>
++                            <div>Easy to use</div>
++                            <div class="des">New MiHome APP is minimalist, enjoy life</div>
+                         </li>
+                         <li>
+                             <div class="ico safe"></div>
+-                             <div>安全</div>
+-                            <div class="des">7x24小时安全防护 一键拉黑蹭网老王</div>
++                             <div>Safety</div>
++                            <div class="des">7x24 hours security protection, one-click blacklisting of the old king</div>
+                         </li>
+                         <li>
+                             <div class="ico gamespeedup"></div>
+-                            <div>加速</div>
+-                            <div class="des">提高带宽，游戏加速 团战胜人一筹</div>
++                            <div>Accelerate</div>
++                            <div class="des">Raise the bandwidth, the game accelerates the team's victory over</div>
+                         </li>
+                         <li>
+                             
+                             <div class="ico money"></div>
+-                            <div>赚钱</div>
+-                            <div class="des">分享WiFi赚点钱 欢迎老王来蹭网</div>
++                            <div>Make money</div>
++                            <div class="des">Share WiFi and make some money</div>
+                         </li>
+                     </ul>
+ 
+-                    <a href="" id="install" class="btn btn-primary btn-block mgtp"><span><%:现在安装%></span></a>
+-                    <a href="miwifi://tab?tab=0&subtab=0" id="open" class="btn btn-primary btn-block"><span><%:我已安装，现在打开%></span></a>
++                    <a href="" id="install" class="btn btn-primary btn-block mgtp"><span><%:Now install%></span></a>
++                    <a href="miwifi://tab?tab=0&subtab=0" id="open" class="btn btn-primary btn-block"><span><%:I have installed it, now open it%></span></a>
+                     <!-- <div class="notice"><span><i></i><%:不支持手机端网页管理路由器4%></span></div> -->
+-                    <div class="notice"><span><%:本地管理小米路由器%></span></div>
++                    <div class="notice"><span><%:Local management Xiaomi router%></span></div>
+                 </div>
+     </div>
+     <%include("web/inc/footermini")%>

@@ -35,3 +35,5 @@ git-src
 .cproject
 .ccache
 .vscode*
+originfw/
+bin-cr881x/

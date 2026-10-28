@@ -12,5 +12,17 @@ boot() {
 	linksys,spnmx56)
 		mtd resetbc s_env || true
 	;;
+	xiaomi,cr881x)
+		# Confirm a boot after flashing the other slot (OTA), otherwise
+		# Xiaomi's U-Boot rolls back to flag_last_success.
+		[ "$(fw_printenv -n flag_ota_reboot 2>/dev/null)" = "1" ] || return 0
+		if grep -q 'ubi.mtd=rootfs_1' /proc/cmdline; then
+			fw_setenv flag_last_success 1
+		else
+			fw_setenv flag_last_success 0
+		fi
+		fw_setenv flag_ota_reboot 0
+		fw_setenv flag_boot_success 1
+	;;
 	esac
 }

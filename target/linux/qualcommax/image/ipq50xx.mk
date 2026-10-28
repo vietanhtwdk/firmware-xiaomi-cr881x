@@ -441,6 +441,29 @@ define Device/xiaomi_ax6000
 endef
 TARGET_DEVICES += xiaomi_ax6000
 
+define Device/xiaomi_cr881x
+	$(call Device/FitImage)
+	$(call Device/UbiFit)
+	DEVICE_VENDOR := Xiaomi
+	DEVICE_MODEL := CR881x
+	DEVICE_ALT0_VENDOR := Xiaomi
+	DEVICE_ALT0_MODEL := CR8808
+	DEVICE_ALT1_VENDOR := Xiaomi
+	DEVICE_ALT1_MODEL := CR8818
+	DEVICE_DTS_CONFIG := config@mp03.3
+	SOC := ipq5018
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	NAND_SIZE := 128m
+	# Each of the rootfs/rootfs_1 UBI partitions is 30 MiB
+	IMAGE_SIZE := 30720k
+	IMAGE/factory.ubi := append-ubi | check-size
+	DEVICE_PACKAGES := ath11k-firmware-ipq5018-qcn6122 \
+		ipq-wifi-xiaomi_cr881x \
+		kmod-dsa-yt921x
+endef
+TARGET_DEVICES += xiaomi_cr881x
+
 define Device/xiaomi_redmi-ax5400
 	$(call Device/xiaomi_ipq50xx_ax_base)
 	DEVICE_MODEL := Redmi AX5400

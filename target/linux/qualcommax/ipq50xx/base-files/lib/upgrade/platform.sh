@@ -338,6 +338,30 @@ platform_do_upgrade() {
 		CI_DATA_UBIPART="rootfs"
 		nand_do_upgrade "$1"
 		;;
+	xiaomi,cr881x)
+		# Make sure that UART is enabled
+		fw_setenv boot_wait on
+		fw_setenv uart_en 1
+
+		# Upgrade the slot we are running from and keep booting it,
+		# the other slot (e.g. stock firmware) is left untouched.
+		if grep -q 'ubi.mtd=rootfs_1' /proc/cmdline; then
+			CI_UBIPART="rootfs_1"
+			idx=1
+		else
+			CI_UBIPART="rootfs"
+			idx=0
+		fi
+		fw_setenv flag_boot_rootfs $idx
+		fw_setenv flag_last_success $idx
+		fw_setenv flag_boot_success 1
+		fw_setenv flag_ota_reboot 0
+		fw_setenv flag_try_sys1_failed 0
+		fw_setenv flag_try_sys2_failed 0
+
+		remove_oem_ubi_volume ubi_rootfs
+		nand_do_upgrade "$1"
+		;;
 	xunison,exigo-hub-d50-5g|\
 	yuncore,ax830|\
 	yuncore,ax850|\

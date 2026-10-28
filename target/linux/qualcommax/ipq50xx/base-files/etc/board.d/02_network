@@ -29,7 +29,8 @@ ipq50xx_setup_interfaces()
 	linksys,mx5500|\
 	linksys,spnmx56|\
 	mercusys,mr80x-v2|\
-	xiaomi,ax6000)
+	xiaomi,ax6000|\
+	xiaomi,cr881x)
 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" "wan"
 		;;
 	linksys,mx6200|\

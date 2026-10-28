@@ -1,12 +1,13 @@
 #!/bin/sh /etc/rc.common
 # ZeroTier One. Join a network once with:
 #   zerotier-cli join <network id>
-# Identity and joined networks persist in /etc/zerotier.
+# Identity and joined networks persist in /data/zerotier: on Xiaomi
+# firmware only a few /etc entries are bind-mounted from /data.
 
 START=90
 USE_PROCD=1
 
-HOME_DIR=/etc/zerotier
+HOME_DIR=/data/zerotier
 
 start_service() {
 	mkdir -p "$HOME_DIR"

@@ -3,6 +3,7 @@
 #   zerotier-cli join <network id>
 # Identity and joined networks persist in /data/zerotier: on Xiaomi
 # firmware only a few /etc entries are bind-mounted from /data.
+# rc.d is read-only, so disable with: touch /data/zerotier/disabled
 
 START=90
 USE_PROCD=1
@@ -10,7 +11,11 @@ USE_PROCD=1
 HOME_DIR=/data/zerotier
 
 start_service() {
-	mkdir -p "$HOME_DIR"
+	[ -f "$HOME_DIR/disabled" ] && return 0
+
+	mkdir -p "$HOME_DIR" /var/lib
+	# zerotier-cli looks for its auth token in the default home
+	ln -sfn "$HOME_DIR" /var/lib/zerotier-one
 
 	procd_open_instance
 	procd_set_param command /usr/bin/zerotier-one "$HOME_DIR"

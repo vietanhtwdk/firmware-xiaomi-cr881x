@@ -1,0 +1,23 @@
+#!/bin/sh /etc/rc.common
+# Emergency SSH fallback: the firmware's original dropbear (ssh-rsa only)
+# on port 2222, independent of the main dropbear on 22. If the main one
+# ever fails to start, connect here instead:
+#   ssh -o HostKeyAlgorithms=+ssh-rsa -p 2222 root@192.168.31.1
+# Host key is shared with the main instance (/etc/dropbear <- /data/dropbear).
+
+START=51
+USE_PROCD=1
+
+PROG=/usr/sbin/dropbear-stock
+PORT=2222
+
+start_service() {
+	[ -x "$PROG" ] || return 0
+	# dropbear-stock is a multi-call binary; its name is not a known applet,
+	# so the applet ("dropbear") must be passed as the first argument.
+	# -F foreground (procd), -R generates any missing host key.
+	procd_open_instance
+	procd_set_param command "$PROG" dropbear -F -R -p "$PORT"
+	procd_set_param respawn
+	procd_close_instance
+}

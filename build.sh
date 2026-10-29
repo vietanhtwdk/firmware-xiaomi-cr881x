@@ -15,6 +15,8 @@
 #       wol            Wake-on-LAN sender at /usr/bin/wol
 #       zerotier       ZeroTier, needs ZEROTIER_BIN=/path (see tools/build-zerotier.sh)
 #       dropbear       newer dropbear, needs DROPBEAR_BIN=/path (tools/build-dropbear.sh)
+#       sshfallback    stock dropbear on :2222 as an emergency SSH fallback
+#                      (recommended together with dropbear, in case it fails)
 #   ZEROTIER_BIN=..., DROPBEAR_BIN=...   static ARMv7 binaries for the above
 #
 # Always applied (device fixes, not optional): YT9215 port map, LED names,
@@ -33,8 +35,8 @@ FEATURES=${FEATURES-adblock wol}
 has_feature() { case " $FEATURES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 for f in $FEATURES; do
 	case "$f" in
-	adblock|wol|zerotier|dropbear) ;;
-	*) echo "unknown feature: $f (adblock wol zerotier dropbear)" >&2; exit 1 ;;
+	adblock|wol|zerotier|dropbear|sshfallback) ;;
+	*) echo "unknown feature: $f (adblock wol zerotier dropbear sshfallback)" >&2; exit 1 ;;
 	esac
 done
 has_feature zerotier && : "${ZEROTIER_BIN:?FEATURES has zerotier, set ZEROTIER_BIN}"
@@ -143,6 +145,14 @@ if has_feature zerotier; then
 	ln -sf zerotier-one "$R/usr/bin/zerotier-idtool"
 	install -m 0755 "$TOP/files/zerotier.init" "$R/etc/init.d/zerotier"
 	ln -sf ../init.d/zerotier "$R/etc/rc.d/S90zerotier"
+fi
+
+if has_feature sshfallback; then
+	echo "==> ssh fallback (stock dropbear on :2222)"
+	# keep the firmware's original dropbear before it is replaced
+	cp -a "$R/usr/sbin/dropbear" "$R/usr/sbin/dropbear-stock"
+	install -m 0755 "$TOP/files/dropbear-fallback.init" "$R/etc/init.d/dropbear-fallback"
+	ln -sf ../init.d/dropbear-fallback "$R/etc/rc.d/S51dropbear-fallback"
 fi
 
 if has_feature dropbear; then

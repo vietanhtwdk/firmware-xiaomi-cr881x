@@ -47,7 +47,7 @@ diff -ruN a/usr/lib/lua/luci/view/web/inc/sysinfo.htm b/usr/lib/lua/luci/view/we
 -            <div class="logs" style="display:none;">
 -                <h4><%:更新日志%></h4>
 +            <h4><%:System version%></h4>
-+            <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
++            <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x by vietanhtwdk &amp; Claude. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
 +            <!--<p id="upgradeinfo"></p>-->
 +            <!--
 +            <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:Upgrade immediately%></span></a></p>
@@ -113,7 +113,7 @@ diff -ruN a/usr/lib/lua/luci/view/web/inc/sysinfo_ap.htm b/usr/lib/lua/luci/view
 -                    <iframe name="setting" id="changelogUrl" style="width:100%; border:0;background:none;" src="about:blank" frameborder="0" height="500" scrolling="yes"></iframe>
 -                </div>
 +        <h4><%:System version%></h4>
-+        <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
++        <p>Xiaomi RA82 v1.4.31, rebuilt for CR881x by vietanhtwdk &amp; Claude. Web/OTA upgrade is disabled: official RA82 images lack the YT9215 switch driver.</p>
 +        <!--<p id="upgradeinfo"></p>-->
 +        <!--
 +        <p class="hasnewver" style="display:none;"><a href="<%=luci.dispatcher.build_url("web", "syslock")%>?flashtype=download" class="btn btn-primary btn-l" id="btnUpgread"><span><%:Upgrade immediately%></span></a></p>

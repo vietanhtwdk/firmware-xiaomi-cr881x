@@ -1,0 +1,42 @@
+#!/bin/sh
+# nvram is shared with the CR8818 (CMCC) stock firmware, and bdata sync
+# restores its values on factory reset. Bring it in line with what the
+# RA82 international firmware expects, on every boot.
+
+CR881X_COUNTRY="@COUNTRY@"
+
+cr881x_nvram() {
+	local changed= ssid suffix
+
+	# Web login hashes with SHA256 only when EncryptMode=1 (RA82 default)
+	[ "$(nvram get EncryptMode)" = "1" ] || {
+		nvram set EncryptMode=1
+		changed=1
+	}
+
+	# Without CountryCode the firmware falls back to CN
+	if [ -n "$CR881X_COUNTRY" ]; then
+		case "$(nvram get CountryCode)" in
+		""|CN)
+			nvram set CountryCode="$CR881X_COUNTRY"
+			changed=1
+			;;
+		esac
+	fi
+
+	# The web setup expects Xiaomi style SSIDs, CMCC-xxxx breaks it
+	ssid=$(nvram get wl1_ssid)
+	case "$ssid" in
+	CMCC-*|"")
+		suffix=$(echo "${ssid##*-}" | tr a-z A-Z)
+		[ -n "$suffix" ] || suffix=$(nvram get SN | tail -c 5 | tr a-z A-Z)
+		nvram set wl1_ssid="Xiaomi_$suffix"
+		nvram set wl0_ssid="Xiaomi_${suffix}_5G"
+		changed=1
+		;;
+	esac
+
+	[ -n "$changed" ] && nvram commit
+}
+
+boot_hook_add preinit_main cr881x_nvram

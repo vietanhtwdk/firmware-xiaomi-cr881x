@@ -9,6 +9,7 @@
 #   ROOT_PASSWORD='...' ./build.sh <miwifi_ra82_firmware_*.bin> <mtd18_stock.bin> [out_dir]
 #
 # Optional:
+#   COUNTRY=VN                           nvram CountryCode set on boot when empty or CN
 #   ZEROTIER_BIN=/path/to/zerotier-one   static ARMv7 binary, see tools/build-zerotier.sh
 #
 # Needs: python3 squashfs-tools mtd-utils (ubinize) fakeroot openssl patch
@@ -42,6 +43,7 @@ head -c 4 "$KERNEL" | cmp -s - <(printf '\xd0\x0d\xfe\xed') ||
 # ownership and modes survive the unsquashfs/mksquashfs round trip.
 export TOP WORK ROOT_PASSWORD
 export ZEROTIER_BIN=${ZEROTIER_BIN:-}
+export COUNTRY=${COUNTRY:-}
 fakeroot bash -euo pipefail <<'EOF'
 R=$WORK/rootfs
 S=$WORK/stockfs
@@ -96,6 +98,14 @@ for p in "$TOP"/patches/*.patch; do
 	echo "    $(basename "$p")"
 	patch -d "$R" -p1 -s --no-backup-if-mismatch < "$p"
 done
+
+echo "==> nvram fixups (country: ${COUNTRY:-unchanged})"
+if [ -n "$COUNTRY" ]; then
+	grep -q "^config mapping $COUNTRY\$" "$R/etc/config/country_mapping" ||
+		{ echo "unknown COUNTRY $COUNTRY (see /etc/config/country_mapping)" >&2; exit 1; }
+fi
+sed "s/@COUNTRY@/$COUNTRY/" "$TOP/files/33_cr881x_nvram" > "$R/lib/preinit/33_cr881x_nvram"
+chmod 644 "$R/lib/preinit/33_cr881x_nvram"
 
 echo "==> root password"
 hash=$(openssl passwd -1 "$ROOT_PASSWORD")

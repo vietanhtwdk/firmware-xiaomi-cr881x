@@ -1,13 +1,13 @@
 #!/bin/sh
 # On-router adblock list updater for dnsmasq.
-#   sh /data/adblock-update.sh            # refresh and reload dnsmasq
+#   adblock-update                 # refresh and reload dnsmasq
 # Lists (hosts format) are read from /data/adblock.lists, one URL per line;
 # a default is written on first run. Output: /data/dnsmasq.d/adblock.conf
 #
 # One-time setup (persists in /data via uci config):
 #   uci set dhcp.@dnsmasq[0].confdir=/data/dnsmasq.d
 #   uci commit dhcp
-#   sh /data/adblock-update.sh
+#   adblock-update
 
 set -e
 
@@ -24,10 +24,17 @@ EOF
 : > "$TMP"
 while read -r url; do
 	case "$url" in ""|\#*) continue ;; esac
-	echo "fetch $url"
-	curl -fsSL "$url" >> "$TMP" || { echo "failed: $url" >&2; }
+	echo "fetch $url ..."
+	# fail after a stalled download instead of hanging forever
+	if ! curl -fsSL --connect-timeout 15 --max-time 180 \
+		--retry 2 "$url" >> "$TMP"; then
+		echo "failed (timeout or error): $url" >&2
+	fi
 done < "$LISTS"
 
+[ -s "$TMP" ] || { echo "no data downloaded, aborting" >&2; rm -f "$TMP"; exit 1; }
+
+echo "converting $(wc -l < "$TMP") lines ..."
 awk '
 	/^[ 	]*#/ { next }
 	{ sub(/#.*/, "") }
@@ -48,5 +55,6 @@ fi
 mv "$OUT.new" "$OUT"
 echo "adblock: $n domains -> $OUT"
 
+echo "restarting dnsmasq ..."
 /etc/init.d/dnsmasq restart
-echo "dnsmasq reloaded"
+echo "done"

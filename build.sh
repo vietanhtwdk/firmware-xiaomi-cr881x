@@ -9,10 +9,16 @@
 #   ROOT_PASSWORD='...' ./build.sh <miwifi_ra82_firmware_*.bin> <mtd18_stock.bin> [out_dir]
 #
 # Optional:
-#   COUNTRY=VN                           nvram CountryCode set on boot when empty or CN
-#   ZEROTIER_BIN=/path/to/zerotier-one   static ARMv7 binary, see tools/build-zerotier.sh
-#   DROPBEAR_BIN=/path/to/dropbear       static ARMv7 multi-call dropbear with ed25519,
-#                                        see tools/build-dropbear.sh
+#   COUNTRY=VN         nvram CountryCode set on boot when empty or CN
+#   FEATURES="..."     space separated list of extras to add (default: adblock wol)
+#       adblock        dnsmasq blocklist updater at /usr/sbin/adblock-update
+#       wol            Wake-on-LAN sender at /usr/bin/wol
+#       zerotier       ZeroTier, needs ZEROTIER_BIN=/path (see tools/build-zerotier.sh)
+#       dropbear       newer dropbear, needs DROPBEAR_BIN=/path (tools/build-dropbear.sh)
+#   ZEROTIER_BIN=..., DROPBEAR_BIN=...   static ARMv7 binaries for the above
+#
+# Always applied (device fixes, not optional): YT9215 port map, LED names,
+# nvram fixups, SSH host key persistence, disabled upgrade.
 #
 # Needs: python3 squashfs-tools mtd-utils (ubinize) fakeroot openssl patch
 
@@ -22,6 +28,18 @@ RA82_BIN=${1:?RA82 firmware .bin}
 STOCK_DUMP=${2:?CR8818 stock mtd18 dump}
 OUT=${3:-out}
 : "${ROOT_PASSWORD:?set ROOT_PASSWORD}"
+
+FEATURES=${FEATURES-adblock wol}
+has_feature() { case " $FEATURES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+for f in $FEATURES; do
+	case "$f" in
+	adblock|wol|zerotier|dropbear) ;;
+	*) echo "unknown feature: $f (adblock wol zerotier dropbear)" >&2; exit 1 ;;
+	esac
+done
+has_feature zerotier && : "${ZEROTIER_BIN:?FEATURES has zerotier, set ZEROTIER_BIN}"
+has_feature dropbear && : "${DROPBEAR_BIN:?FEATURES has dropbear, set DROPBEAR_BIN}"
+echo "==> features: ${FEATURES:-(none)}"
 
 TOP=$(cd "$(dirname "$0")" && pwd)
 WORK=$(mktemp -d)
@@ -44,8 +62,9 @@ head -c 4 "$KERNEL" | cmp -s - <(printf '\xd0\x0d\xfe\xed') ||
 # Everything touching the rootfs runs inside one fakeroot session, so that
 # ownership and modes survive the unsquashfs/mksquashfs round trip.
 export TOP WORK ROOT_PASSWORD
-export ZEROTIER_BIN=${ZEROTIER_BIN:-}
 export COUNTRY=${COUNTRY:-}
+export FEATURES
+export ZEROTIER_BIN=${ZEROTIER_BIN:-}
 export DROPBEAR_BIN=${DROPBEAR_BIN:-}
 fakeroot bash -euo pipefail <<'EOF'
 R=$WORK/rootfs
@@ -115,7 +134,9 @@ hash=$(openssl passwd -1 "$ROOT_PASSWORD")
 sed -i "s|^root:[^:]*:|root:${hash}:|" "$R/etc/shadow"
 chmod 600 "$R/etc/shadow"
 
-if [ -n "$ZEROTIER_BIN" ]; then
+has_feature() { case " $FEATURES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+if has_feature zerotier; then
 	echo "==> ZeroTier"
 	install -m 0755 "$ZEROTIER_BIN" "$R/usr/bin/zerotier-one"
 	ln -sf zerotier-one "$R/usr/bin/zerotier-cli"
@@ -124,14 +145,22 @@ if [ -n "$ZEROTIER_BIN" ]; then
 	ln -sf ../init.d/zerotier "$R/etc/rc.d/S90zerotier"
 fi
 
-if [ -n "$DROPBEAR_BIN" ]; then
+if has_feature dropbear; then
 	echo "==> dropbear"
 	# dbclient, dropbearkey, scp and ssh are symlinks to it
 	install -m 0755 "$DROPBEAR_BIN" "$R/usr/sbin/dropbear"
 fi
 
-# dnsmasq-based adblock updater (list lives in /data, run on demand)
-install -m 0755 "$TOP/files/adblock-update.sh" "$R/usr/sbin/adblock-update"
+if has_feature adblock; then
+	echo "==> adblock"
+	# dnsmasq blocklist updater (list lives in /data, run on demand)
+	install -m 0755 "$TOP/files/adblock-update.sh" "$R/usr/sbin/adblock-update"
+fi
+
+if has_feature wol; then
+	echo "==> wol"
+	install -m 0755 "$TOP/files/wol" "$R/usr/bin/wol"
+fi
 
 echo "==> squashfs"
 mksquashfs "$R" "$WORK/rootfs.squashfs" -comp xz -b 262144 -noappend -all-root -quiet

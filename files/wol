@@ -1,0 +1,21 @@
+#!/usr/bin/lua
+-- Wake-on-LAN magic packet sender.
+--   wol <MAC> [broadcast]      e.g. wol AA:BB:CC:DD:EE:FF
+-- Default broadcast 255.255.255.255, UDP ports 9 and 7.
+
+local nixio = require "nixio"
+
+local mac, bcast = arg[1], arg[2] or "255.255.255.255"
+local hex = (mac or ""):gsub("[:%-]", ""):lower()
+if #hex ~= 12 or hex:find("%X") then
+	io.stderr:write("usage: wol AA:BB:CC:DD:EE:FF [broadcast]\n")
+	os.exit(1)
+end
+
+local m = hex:gsub("..", function(h) return string.char(tonumber(h, 16)) end)
+local pkt = string.rep("\255", 6) .. string.rep(m, 16)
+
+local s = nixio.socket("inet", "dgram")
+s:setopt("socket", "broadcast", 1)
+for _, port in ipairs({ 9, 7 }) do s:sendto(pkt, bcast, port) end
+print("magic packet sent to " .. mac .. " via " .. bcast)

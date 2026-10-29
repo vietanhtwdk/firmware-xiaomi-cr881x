@@ -130,6 +130,9 @@ if [ -n "$DROPBEAR_BIN" ]; then
 	install -m 0755 "$DROPBEAR_BIN" "$R/usr/sbin/dropbear"
 fi
 
+# dnsmasq-based adblock updater (list lives in /data, run on demand)
+install -m 0755 "$TOP/files/adblock-update.sh" "$R/usr/sbin/adblock-update"
+
 echo "==> squashfs"
 mksquashfs "$R" "$WORK/rootfs.squashfs" -comp xz -b 262144 -noappend -all-root -quiet
 EOF

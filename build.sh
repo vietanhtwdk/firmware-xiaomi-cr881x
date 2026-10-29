@@ -11,6 +11,8 @@
 # Optional:
 #   COUNTRY=VN                           nvram CountryCode set on boot when empty or CN
 #   ZEROTIER_BIN=/path/to/zerotier-one   static ARMv7 binary, see tools/build-zerotier.sh
+#   DROPBEAR_BIN=/path/to/dropbear       static ARMv7 multi-call dropbear with ed25519,
+#                                        see tools/build-dropbear.sh
 #
 # Needs: python3 squashfs-tools mtd-utils (ubinize) fakeroot openssl patch
 
@@ -44,6 +46,7 @@ head -c 4 "$KERNEL" | cmp -s - <(printf '\xd0\x0d\xfe\xed') ||
 export TOP WORK ROOT_PASSWORD
 export ZEROTIER_BIN=${ZEROTIER_BIN:-}
 export COUNTRY=${COUNTRY:-}
+export DROPBEAR_BIN=${DROPBEAR_BIN:-}
 fakeroot bash -euo pipefail <<'EOF'
 R=$WORK/rootfs
 S=$WORK/stockfs
@@ -119,6 +122,12 @@ if [ -n "$ZEROTIER_BIN" ]; then
 	ln -sf zerotier-one "$R/usr/bin/zerotier-idtool"
 	install -m 0755 "$TOP/files/zerotier.init" "$R/etc/init.d/zerotier"
 	ln -sf ../init.d/zerotier "$R/etc/rc.d/S90zerotier"
+fi
+
+if [ -n "$DROPBEAR_BIN" ]; then
+	echo "==> dropbear"
+	# dbclient, dropbearkey, scp and ssh are symlinks to it
+	install -m 0755 "$DROPBEAR_BIN" "$R/usr/sbin/dropbear"
 fi
 
 echo "==> squashfs"

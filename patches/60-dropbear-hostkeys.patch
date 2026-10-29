@@ -1,0 +1,24 @@
+diff -ruN a/etc/init.d/dropbear b/etc/init.d/dropbear
+--- a/etc/init.d/dropbear	2026-10-29 15:10:08.668676793 +0000
++++ b/etc/init.d/dropbear	2026-10-29 15:10:08.683824596 +0000
+@@ -72,7 +72,7 @@
+ 	local pid_file="/var/run/${NAME}.${PIDCOUNT}.pid"
+ 
+ 	procd_open_instance
+-	procd_set_param command "$PROG" -F -P "$pid_file"
++	procd_set_param command "$PROG" -F -R -P "$pid_file"
+ 	[ "${PasswordAuth}" -eq 0 ] && procd_append_param command -s
+ 	[ "${GatewayPorts}" -eq 1 ] && procd_append_param command -a
+ 	[ "${RootPasswordAuth}" -eq 0 ] && procd_append_param command -g
+@@ -131,6 +131,11 @@
+ {
+ 	# 稳定版不能打开ssh服务
+ 
++	# Host keys in /data survive reboots (/etc/dropbear is not persistent)
++	mkdir -p /data/dropbear
++	chmod 700 /data/dropbear
++	grep -q " /etc/dropbear " /proc/mounts || mount --bind /data/dropbear /etc/dropbear
++
+ 	[ -s /etc/dropbear/dropbear_rsa_host_key ] || keygen
+ 
+ 	. /lib/functions.sh

@@ -100,7 +100,10 @@ for f in 09-crypto-gf128 09-crypto-xts 20-lib-crc16 30-dm 30-fs-ext4 30-loop \
 	 43-ip6tables-extra 43-ipt-nat6 77-ipaccount2; do
 	rm -f "$R/etc/modules.d/$f" "$R/etc/modules-boot.d/$f"
 done
-for f in 57-yt-9215s-driver 77-ipaccount3 88-ip6tables-extra 88-ipt-nat6; do
+# 52-qca-mcs: ecm depends on qca-mcs (mc_bridge_* symbols); the RA82
+# userspace autoloads the rest of the NSS stack but not qca-mcs, so ECM/NSS
+# acceleration failed to load on boot
+for f in 52-qca-mcs 57-yt-9215s-driver 77-ipaccount3 88-ip6tables-extra 88-ipt-nat6; do
 	cp -a "$S/etc/modules.d/$f" "$R/etc/modules.d/"
 done
 

@@ -277,6 +277,10 @@ tự `MUSL=<phiên bản|tarball>` cho musl (mặc định 1.2.6).
 Dropbear trong image là binary đa năng: `dropbear`, `ssh`/`dbclient`, `scp`,
 `dropbearkey` đều trỏ tới `/usr/sbin/dropbear`. Đã chạy thực tế (v2026.94).
 
+`build-dropbear.sh` áp patch của OpenWrt (`files/dropbear-allow-blank-root-password.patch`)
+cho phép root đăng nhập khi mật khẩu rỗng (xem mục dưới); patch vô hại khi root
+có mật khẩu.
+
 Không thay dropbear thì thêm vào `~/.ssh/config` của máy client:
 
 ```
@@ -288,6 +292,28 @@ Host 192.168.31.1
 Host key lưu ở `/data/dropbear` (bind-mount lên `/etc/dropbear`,
 `60-dropbear-hostkeys.patch`) nên không đổi sau reboot; chỉ đổi khi format
 `/data` hoặc reset.
+
+### Mật khẩu root rỗng (như OpenWrt)
+
+Dropbear chặn mọi mật khẩu rỗng ở nhánh *password*; OpenWrt vá nhánh *none* để
+root rỗng vẫn vào được (đó là cách OpenWrt đời mới cho SSH lần đầu không mật
+khẩu, thay cho telnet). Patch đó đã có trong `build-dropbear.sh`.
+
+Build image với **`ROOT_PASSWORD=''`** (rỗng) → `/etc/shadow` ghi `root::`.
+Cần **`FEATURES=dropbear`** (dropbear mới đã vá); dropbear gốc 2017.75 không có
+patch nên vẫn chặn. Lần đầu SSH **không mật khẩu**:
+
+```sh
+FEATURES="adblock wol dropbear sshfallback" DROPBEAR_BIN=out/dropbear \
+    COUNTRY=VN ROOT_PASSWORD='' ./build.sh <ra82.bin> <mtd18.bin> out
+# sau khi boot:
+ssh root@192.168.31.1        # không hỏi mật khẩu
+passwd                        # ĐẶT NGAY mật khẩu của bạn
+```
+
+⚠️ Tới khi `passwd`, bất kỳ ai trong LAN đều SSH root được không mật khẩu (đúng
+như OpenWrt mới flash). Fallback cổng 2222 là dropbear gốc (không patch) nên
+rỗng không vào được — chỉ dùng sau khi đã đặt mật khẩu.
 
 ### SSH cứu hộ (không có UART)
 

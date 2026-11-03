@@ -30,6 +30,7 @@ SRC=${1:?dropbear version or tarball}
 OUT=${2:-out}
 MUSL=${MUSL:-1.2.6}
 ARCH="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard"
+TOP=$(cd "$(dirname "$0")/.." && pwd)
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -73,6 +74,11 @@ fi
 
 fetch "$SRC" "https://matt.ucc.asn.au/dropbear/releases/dropbear-@V@.tar.bz2" xjf
 cd "$WORK"/dropbear-*
+
+# OpenWrt's patch: allow root login with a blank password via the "none" auth
+# method, so an image built with an empty ROOT_PASSWORD behaves like a fresh
+# OpenWrt (passwordless first SSH). Harmless when root has a password set.
+patch -p1 < "$TOP/files/dropbear-allow-blank-root-password.patch"
 
 # Host keys stay in the default /etc/dropbear, which the init script
 # bind-mounts from /data/dropbear

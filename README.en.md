@@ -283,6 +283,10 @@ download; likewise `MUSL=<version|tarball>` for musl (default 1.2.6).
 The dropbear in the image is a multi-call binary: `dropbear`, `ssh`/`dbclient`,
 `scp`, `dropbearkey` all point at `/usr/sbin/dropbear`. Tested (v2026.94).
 
+`build-dropbear.sh` applies OpenWrt's patch
+(`files/dropbear-allow-blank-root-password.patch`) that lets root log in with a
+blank password (see below); the patch is harmless when root has a password.
+
 Without replacing dropbear, add to the client's `~/.ssh/config`:
 
 ```
@@ -294,6 +298,30 @@ Host 192.168.31.1
 Host keys live in `/data/dropbear` (bind-mounted over `/etc/dropbear`,
 `60-dropbear-hostkeys.patch`), so they do not change across reboots; only on a
 `/data` format or reset.
+
+### Blank root password (OpenWrt-style)
+
+Dropbear rejects any blank password on the *password* path; OpenWrt patches the
+*none* path so a blank-password root still gets in (that is how modern OpenWrt
+offers passwordless first SSH, replacing telnet). That patch is in
+`build-dropbear.sh`.
+
+Build the image with **`ROOT_PASSWORD=''`** → `/etc/shadow` gets `root::`. It
+needs **`FEATURES=dropbear`** (the patched dropbear); the stock 2017.75 has no
+patch and still rejects it. First SSH is **passwordless**:
+
+```sh
+FEATURES="adblock wol dropbear sshfallback" DROPBEAR_BIN=out/dropbear \
+    COUNTRY=VN ROOT_PASSWORD='' ./build.sh <ra82.bin> <mtd18.bin> out
+# after boot:
+ssh root@192.168.31.1        # no password prompt
+passwd                        # SET a password right away
+```
+
+⚠️ Until you run `passwd`, anyone on the LAN can SSH in as root with no password
+(just like a freshly flashed OpenWrt). The fallback on port 2222 is the stock
+dropbear (no patch), so blank does not work there — use it only after setting a
+password.
 
 ### Emergency SSH (no UART)
 

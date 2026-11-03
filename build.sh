@@ -29,7 +29,9 @@ set -euo pipefail
 RA82_BIN=${1:?RA82 firmware .bin}
 STOCK_DUMP=${2:?CR8818 stock mtd18 dump}
 OUT=${3:-out}
-: "${ROOT_PASSWORD:?set ROOT_PASSWORD}"
+# May be empty for a blank, OpenWrt-style passwordless first login (then set
+# one with passwd). Must still be defined, so an accidental unset is caught.
+: "${ROOT_PASSWORD?set ROOT_PASSWORD (use '' for a blank first-login password)}"
 
 FEATURES=${FEATURES-adblock wol}
 has_feature() { case " $FEATURES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -41,6 +43,11 @@ for f in $FEATURES; do
 done
 has_feature zerotier && : "${ZEROTIER_BIN:?FEATURES has zerotier, set ZEROTIER_BIN}"
 has_feature dropbear && : "${DROPBEAR_BIN:?FEATURES has dropbear, set DROPBEAR_BIN}"
+if [ -z "$ROOT_PASSWORD" ] && ! has_feature dropbear; then
+	echo "WARNING: empty ROOT_PASSWORD needs FEATURES=dropbear built with the" >&2
+	echo "         allow-blank-root patch; the stock dropbear rejects blank" >&2
+	echo "         passwords, so you would be locked out of SSH." >&2
+fi
 echo "==> features: ${FEATURES:-(none)}"
 
 TOP=$(cd "$(dirname "$0")" && pwd)
@@ -134,9 +141,14 @@ fi
 sed "s/@COUNTRY@/$COUNTRY/" "$TOP/files/33_cr881x_nvram" > "$R/lib/preinit/33_cr881x_nvram"
 chmod 644 "$R/lib/preinit/33_cr881x_nvram"
 
-echo "==> root password"
-hash=$(openssl passwd -1 "$ROOT_PASSWORD")
-sed -i "s|^root:[^:]*:|root:${hash}:|" "$R/etc/shadow"
+if [ -n "$ROOT_PASSWORD" ]; then
+	echo "==> root password"
+	hash=$(openssl passwd -1 "$ROOT_PASSWORD")
+	sed -i "s|^root:[^:]*:|root:${hash}:|" "$R/etc/shadow"
+else
+	echo "==> root password: BLANK (passwordless first SSH; run passwd after)"
+	sed -i "s|^root:[^:]*:|root::|" "$R/etc/shadow"
+fi
 chmod 600 "$R/etc/shadow"
 
 has_feature() { case " $FEATURES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }

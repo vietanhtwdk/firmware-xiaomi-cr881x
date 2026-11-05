@@ -94,12 +94,21 @@ jobs:
         run: |
           IMG=$(ls out/*.ubi)
           NAME=$(basename "$IMG" .ubi)
-          SUM=$(cut -d' ' -f1 "$IMG.sha256")
+          ROMVER=$(echo "$NAME" | sed -n 's/^cr881x-ra82-\(.*\)-mod$/\1/p')
+          [ -n "$ROMVER" ] || ROMVER=$NAME
+          BUILD="$(date +%Y%m%d).${GITHUB_RUN_NUMBER}"      # build version: date.run
+          SHORT=${GITHUB_SHA::7}
+          # versioned asset + tag so each build is a distinct file and release
+          ASSET="cr881x-ra82-${ROMVER}-mod-${BUILD}.ubi"
+          cp "$IMG" "$ASSET"
+          sha256sum "$ASSET" > "$ASSET.sha256"
+          SUM=$(cut -d' ' -f1 "$ASSET.sha256")
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             TAG="$GITHUB_REF_NAME"
           else
-            TAG="fw-$(date +%Y%m%d)-${GITHUB_RUN_NUMBER}"
+            TAG="fw-${ROMVER}-${BUILD}-${SHORT}"
           fi
+          TITLE="CR881x RA82 ${ROMVER} — build ${BUILD}"
           cat > notes.md <<EOF
           Xiaomi CR881x — RA82 international mod
 
@@ -116,8 +125,9 @@ jobs:
 
           | | |
           |---|---|
-          | File | \`$NAME.ubi\` |
+          | File | \`$ASSET\` |
           | sha256 | \`$SUM\` |
+          | Build | \`$BUILD\` · commit \`$SHORT\` |
           | Features | \`$FEATURES\` |
           | CountryCode | \`${COUNTRY:-(giữ nguyên)}\` |
           | Userspace | RA82 INT 1.4.31 (CDN chính thức) |
@@ -129,7 +139,7 @@ jobs:
           slot đang **không** chạy. Chép image lên rồi so sha256:
 
           \`\`\`sh
-          scp -O $NAME.ubi root@192.168.31.1:/tmp/fw.ubi
+          scp -O $ASSET root@192.168.31.1:/tmp/fw.ubi
           # trên router: phải khớp bảng trên
           sha256sum /tmp/fw.ubi
           \`\`\`
@@ -165,8 +175,16 @@ jobs:
           \`flag_format_overlay=1\` để firmware chép cấu hình/mật khẩu vào \`/data\`;
           chỉ bỏ khi cập nhật từ chính bản build này. Chi tiết: README.
           EOF
-          gh release create "$TAG" "$IMG" "$IMG.sha256" \
-            --title "$NAME" --notes-file notes.md
+          # GitHub's releases API returns transient 5xx; create the release
+          # (retrying, and treating "already exists" from a half-done attempt as
+          # success), then upload the assets idempotently with --clobber.
+          for i in 1 2 3; do
+            gh release view "$TAG" >/dev/null 2>&1 && break
+            gh release create "$TAG" --title "$TITLE" --notes-file notes.md && break
+            echo "release create failed (attempt $i), retrying..." >&2; sleep 5
+          done
+          gh release view "$TAG" >/dev/null 2>&1 || { echo "could not create release $TAG" >&2; exit 1; }
+          gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

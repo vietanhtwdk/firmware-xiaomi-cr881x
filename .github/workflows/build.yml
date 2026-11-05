@@ -123,14 +123,44 @@ jobs:
           | Userspace | RA82 INT 1.4.31 (CDN chính thức) |
           | Hardware layer | CR8818 6.20.58 (CDN chính thức) |
 
-          ## Flash (đang ở OpenWrt/stock có SSH)
+          ## Nạp (đang có SSH vào router — stock hoặc OpenWrt)
+
+          CR881x có 2 slot: \`rootfs\` (mtd18) và \`rootfs_1\` (mtd19); chỉ ghi được
+          slot đang **không** chạy. Chép image lên rồi so sha256:
 
           \`\`\`sh
-          # chép image lên router rồi:
-          mtd -r write $NAME.ubi rootfs
+          scp -O $NAME.ubi root@192.168.31.1:/tmp/fw.ubi
+          # trên router: phải khớp bảng trên
+          sha256sum /tmp/fw.ubi
           \`\`\`
 
-          Kiểm tra \`sha256sum\` khớp bảng trên trước khi ghi.
+          Ghi vào mtd19 và cho boot slot đó (giữ ROM ở mtd18 làm cứu hộ):
+
+          \`\`\`sh
+          ubiformat /dev/mtd19 -y -f /tmp/fw.ubi
+          nvram set flag_try_sys2_failed=0
+          nvram set flag_boot_rootfs=1
+          nvram set flag_last_success=1
+          nvram set flag_format_overlay=1   # bắt buộc khi nạp từ ROM gốc / firmware khác
+          nvram commit
+          reboot
+          \`\`\`
+
+          Quay lại mtd18 nếu cần:
+
+          \`\`\`sh
+          nvram set flag_try_sys1_failed=0
+          nvram set flag_try_sys2_failed=0
+          nvram set flag_boot_rootfs=0
+          nvram set flag_last_success=0
+          nvram set flag_format_overlay=1
+          nvram commit
+          reboot
+          \`\`\`
+
+          ⚠️ **Không có rollback tự động** — bản mới không boot thì cần UART.
+          \`flag_format_overlay=1\` để firmware chép cấu hình/mật khẩu vào \`/data\`;
+          chỉ bỏ khi cập nhật từ chính bản build này. Chi tiết: README.
           EOF
           gh release create "$TAG" "$IMG" "$IMG.sha256" \
             --title "$NAME" --notes-file notes.md

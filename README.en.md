@@ -8,7 +8,9 @@ Xiaomi web UI, mesh, international Mi WiFi / Xiaomi Home app, NSS offload.
 
 * Userspace (web, mesh, app) comes from the **official** RA82 firmware image.
 * The hardware layer (kernel, modules, WiFi/NSS firmware, YT9215 switch tool)
-  comes from the target unit's **CR8818 stock ROM dump** (mtd18).
+  comes from a **CR8818 stock ROM dump** (mtd18) or, equivalently, the
+  **official CR8818 firmware** from Xiaomi's CDN (the 6.20.58 rootfs is
+  byte-identical to the dump).
 * SSH (port 22) uses a root password set at build time; UART is left enabled.
 
 Tested on a real CR8818: boot, switch, WiFi 2.4/5 GHz, web setup wizard.
@@ -75,6 +77,16 @@ COUNTRY=VN ROOT_PASSWORD='...' ./build.sh \
 
 Output: `out/cr881x-ra82-1.4.31-mod.ubi` (~27 MB, 30 MB max) and `.sha256`.
 
+No dump? Pass the official CR8818 firmware (HDR1) as the second argument instead;
+`build.sh` unwraps the header automatically:
+
+```sh
+COUNTRY=VN ROOT_PASSWORD='...' ./build.sh \
+    miwifi_ra82_firmware_db06e_1.4.31_INT.bin \
+    miwifi_cr8818_firmware_4f56a_6.20.58.bin \
+    out
+```
+
 ### Selecting features (FEATURES)
 
 `FEATURES` picks the optional parts baked into the image (default `adblock wol`):
@@ -97,6 +109,19 @@ FEATURES="adblock wol zerotier dropbear sshfallback" \
 
 FEATURES= ... ./build.sh ...     # add nothing
 ```
+
+### Automated build (GitHub Actions)
+
+`.github/workflows/build.yml` builds the full-featured image on GitHub with **no
+dump and no secret**: it downloads both the RA82 and CR8818 6.20.58 firmware from
+Xiaomi's CDN, builds the static ARMv7 ZeroTier/dropbear binaries, generates a
+random root password and writes it into the release.
+
+* Run it from **Actions → build firmware → Run workflow** (pick `country`,
+  `features`), or push a `v*` / `fw-*` tag.
+* It publishes a **Release** with the `.ubi` + `.sha256` attached and the
+  **default password** (SSH + web) in the notes. That password is public on a
+  public repo — change it with `passwd` right after the first login.
 
 ## Flashing
 

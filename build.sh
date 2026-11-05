@@ -3,10 +3,13 @@
 #
 # Userspace (web UI, mesh, Mi WiFi app) comes from the official RA82 image,
 # the hardware layer (kernel, modules, WiFi/NSS firmware, YT9215 tools)
-# comes from your own CR8818 stock dump (mtd18).
+# comes from a CR8818 stock image. That image may be your own mtd18 dump or,
+# equivalently, the official CR8818 firmware .bin from Xiaomi's CDN: the
+# downloaded 6.20.58 rootfs is byte-identical to the dump, so either works.
 #
 # Usage:
-#   ROOT_PASSWORD='...' ./build.sh <miwifi_ra82_firmware_*.bin> <mtd18_stock.bin> [out_dir]
+#   ROOT_PASSWORD='...' ./build.sh <miwifi_ra82_firmware_*.bin> <cr8818_stock> [out_dir]
+#     <cr8818_stock>: a raw mtd18 dump or the official miwifi_cr8818_firmware_*.bin
 #
 # Optional:
 #   COUNTRY=VN         nvram CountryCode set on boot when empty or CN
@@ -62,7 +65,14 @@ done
 echo "==> Unpacking"
 python3 -I "$TOP/tools/xiaomi_fw.py" hdr1 "$RA82_BIN" "$WORK/ra82.ubi"
 python3 -I "$TOP/tools/xiaomi_fw.py" ubi "$WORK/ra82.ubi" "$WORK/ra82"
-python3 -I "$TOP/tools/xiaomi_fw.py" ubi "$STOCK_DUMP" "$WORK/stock"
+# The CR8818 hardware layer is either a raw mtd18 dump (UBI straight away) or
+# the official CR8818 firmware (HDR1 wrapped); unwrap the header when present.
+if head -c4 "$STOCK_DUMP" | cmp -s - <(printf 'HDR1'); then
+	python3 -I "$TOP/tools/xiaomi_fw.py" hdr1 "$STOCK_DUMP" "$WORK/stock.ubi"
+	python3 -I "$TOP/tools/xiaomi_fw.py" ubi "$WORK/stock.ubi" "$WORK/stock"
+else
+	python3 -I "$TOP/tools/xiaomi_fw.py" ubi "$STOCK_DUMP" "$WORK/stock"
+fi
 
 KERNEL="$WORK/stock/0_kernel.bin"
 head -c 4 "$KERNEL" | cmp -s - <(printf '\xd0\x0d\xfe\xed') ||

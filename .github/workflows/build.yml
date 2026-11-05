@@ -1,0 +1,144 @@
+name: build firmware
+
+# Builds the CR881x RA82-international mod and publishes it as a GitHub release.
+# Both inputs are pulled from Xiaomi's official CDN, so no device dump or secret
+# is needed: the downloaded CR8818 6.20.58 rootfs is byte-identical to a real
+# mtd18 dump, and build.sh unwraps its HDR1 header automatically.
+#
+# A fresh random root password is generated each run and written into the
+# release notes (SSH + web). It is PUBLIC on a public repo — change it on first
+# login with `passwd`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      country:
+        description: nvram CountryCode set on boot (blank = leave as shipped)
+        default: VN
+      features:
+        description: FEATURES passed to build.sh
+        default: adblock wol zerotier dropbear sshfallback
+  push:
+    tags: ['v*', 'fw-*']
+
+permissions:
+  contents: write        # create the release
+
+env:
+  COUNTRY: ${{ inputs.country || 'VN' }}
+  FEATURES: ${{ inputs.features || 'adblock wol zerotier dropbear sshfallback' }}
+  RA82_URL: https://cdn.awsde0-fusion.fds.api.mi-img.com/xiaoqiang/rom/ra82/miwifi_ra82_firmware_db06e_1.4.31_INT.bin
+  CR8818_URL: http://cdn.cnbj1.fds.api.mi-img.com/xiaoqiang/rom/cr8818/miwifi_cr8818_firmware_4f56a_6.20.58.bin
+  ZT_VERSION: 1.14.2
+  DB_VERSION: 2026.94
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            squashfs-tools mtd-utils fakeroot openssl patch curl git make \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Download official firmware (RA82 INT + CR8818 6.20.58)
+        run: |
+          mkdir -p dl
+          curl -fL --retry 5 --retry-all-errors -o dl/ra82.bin   "$RA82_URL"
+          curl -fL --retry 5 --retry-all-errors -o dl/cr8818.bin "$CR8818_URL"
+          sha256sum dl/ra82.bin dl/cr8818.bin
+          # both must be complete HDR1 images (~25.9 MB), not a truncated download
+          for f in dl/ra82.bin dl/cr8818.bin; do
+            [ "$(head -c4 "$f")" = HDR1 ] || { echo "$f is not an HDR1 image" >&2; exit 1; }
+            [ "$(stat -c%s "$f")" -ge 25000000 ] || { echo "$f looks truncated" >&2; exit 1; }
+          done
+
+      - name: Cache static ARM binaries (zerotier, dropbear)
+        id: armbin
+        uses: actions/cache@v4
+        with:
+          path: bin
+          key: armbin-zt${{ env.ZT_VERSION }}-db${{ env.DB_VERSION }}-${{ hashFiles('tools/build-zerotier.sh', 'tools/build-dropbear.sh', 'files/dropbear-allow-blank-root-password.patch') }}
+
+      - name: Build zerotier-one (static ARMv7)
+        if: steps.armbin.outputs.cache-hit != 'true'
+        run: tools/build-zerotier.sh "$ZT_VERSION" bin
+
+      - name: Build dropbear (static ARMv7)
+        if: steps.armbin.outputs.cache-hit != 'true'
+        run: tools/build-dropbear.sh "$DB_VERSION" bin
+
+      - name: Generate default root password
+        id: pw
+        run: |
+          PW=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9')
+          PW=${PW:0:16}
+          echo "::add-mask::$PW"
+          echo "password=$PW" >> "$GITHUB_OUTPUT"
+
+      - name: Build firmware
+        env:
+          ROOT_PASSWORD: ${{ steps.pw.outputs.password }}
+          ZEROTIER_BIN: bin/zerotier-one
+          DROPBEAR_BIN: bin/dropbear
+        run: ./build.sh dl/ra82.bin dl/cr8818.bin out
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PW: ${{ steps.pw.outputs.password }}
+        run: |
+          IMG=$(ls out/*.ubi)
+          NAME=$(basename "$IMG" .ubi)
+          SUM=$(cut -d' ' -f1 "$IMG.sha256")
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="fw-$(date +%Y%m%d)-${GITHUB_RUN_NUMBER}"
+          fi
+          cat > notes.md <<EOF
+          Xiaomi CR881x — RA82 international mod
+
+          ## ⚠️ Mật khẩu mặc định (SSH \`root@\` và đăng nhập web)
+
+          \`\`\`
+          $PW
+          \`\`\`
+
+          Đổi **ngay** sau lần đăng nhập đầu: \`passwd\`. Mật khẩu này sinh ngẫu
+          nhiên mỗi lần build và **công khai** trong release — coi như dùng tạm.
+
+          ## Image
+
+          | | |
+          |---|---|
+          | File | \`$NAME.ubi\` |
+          | sha256 | \`$SUM\` |
+          | Features | \`$FEATURES\` |
+          | CountryCode | \`${COUNTRY:-(giữ nguyên)}\` |
+          | Userspace | RA82 INT 1.4.31 (CDN chính thức) |
+          | Hardware layer | CR8818 6.20.58 (CDN chính thức) |
+
+          ## Flash (đang ở OpenWrt/stock có SSH)
+
+          \`\`\`sh
+          # chép image lên router rồi:
+          mtd -r write $NAME.ubi rootfs
+          \`\`\`
+
+          Kiểm tra \`sha256sum\` khớp bảng trên trước khi ghi.
+          EOF
+          gh release create "$TAG" "$IMG" "$IMG.sha256" \
+            --title "$NAME" --notes-file notes.md
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cr881x-firmware
+          path: |
+            out/*.ubi
+            out/*.ubi.sha256

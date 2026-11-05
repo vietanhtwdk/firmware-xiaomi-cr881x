@@ -8,7 +8,8 @@ mesh, app Mi WiFi / Xiaomi Home quốc tế, NSS offload.
 
 * Phần mềm (web, mesh, app) lấy từ file firmware RA82 **chính hãng**.
 * Phần cứng (kernel, module, firmware WiFi/NSS, công cụ switch YT9215) lấy từ
-  **bản dump ROM gốc CR8818** (mtd18) của máy cần cài.
+  **bản dump ROM gốc CR8818** (mtd18), hoặc tương đương là **firmware CR8818
+  chính hãng** tải từ CDN Xiaomi (rootfs bản 6.20.58 giống hệt dump từng byte).
 * SSH (cổng 22) dùng mật khẩu root đặt lúc build, UART giữ nguyên.
 
 Đã chạy thực tế trên CR8818: boot, switch, WiFi 2.4/5 GHz, trang cài đặt web.
@@ -73,6 +74,16 @@ COUNTRY=VN ROOT_PASSWORD='...' ./build.sh \
 
 Kết quả: `out/cr881x-ra82-1.4.31-mod.ubi` (~27 MB, tối đa 30 MB) và `.sha256`.
 
+Không có dump? Dùng thẳng firmware CR8818 chính hãng (HDR1) làm tham số thứ hai;
+`build.sh` tự bóc header:
+
+```sh
+COUNTRY=VN ROOT_PASSWORD='...' ./build.sh \
+    miwifi_ra82_firmware_db06e_1.4.31_INT.bin \
+    miwifi_cr8818_firmware_4f56a_6.20.58.bin \
+    out
+```
+
 ### Chọn tính năng (FEATURES)
 
 `FEATURES` chọn phần tùy chọn đưa vào image (mặc định `adblock wol`):
@@ -95,6 +106,19 @@ FEATURES="adblock wol zerotier dropbear" \
 
 FEATURES= ... ./build.sh ...     # không thêm gì
 ```
+
+### Build tự động (GitHub Actions)
+
+`.github/workflows/build.yml` build và phát hành bản đầy đủ tính năng ngay trên
+GitHub, **không cần dump hay secret**: workflow tải cả firmware RA82 lẫn CR8818
+6.20.58 từ CDN Xiaomi, tự dựng binary ZeroTier/dropbear (static ARMv7), sinh
+mật khẩu root ngẫu nhiên và ghi vào release.
+
+* Chạy: tab **Actions → build firmware → Run workflow** (chọn `country`,
+  `features`), hoặc push tag `v*` / `fw-*`.
+* Kết quả: một **Release** đính kèm `.ubi` + `.sha256`, phần mô tả ghi **mật
+  khẩu mặc định** (SSH + web). Mật khẩu này công khai trên repo công khai — đổi
+  ngay bằng `passwd` sau lần đăng nhập đầu.
 
 ## Nạp
 

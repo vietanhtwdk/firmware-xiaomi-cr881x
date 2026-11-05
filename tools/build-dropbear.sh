@@ -41,7 +41,14 @@ fetch() { # <version|tarball> <url pattern with @V@> <tar flags>
 	if [ -f "$1" ]; then
 		tar "$3" "$1" -C "$WORK"
 	else
-		curl -sfL "${2//@V@/$1}" | tar "$3" - -C "$WORK"
+		# Download to a file with retries first: musl.libc.org is a single,
+		# flaky mirror, and piping a truncated transfer straight into tar
+		# fails with "unexpected end of file" instead of retrying.
+		local tmp="$WORK/dl-$$"
+		curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 \
+			-o "$tmp" "${2//@V@/$1}"
+		tar "$3" "$tmp" -C "$WORK"
+		rm -f "$tmp"
 	fi
 }
 

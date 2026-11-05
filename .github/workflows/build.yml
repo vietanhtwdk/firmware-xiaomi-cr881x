@@ -18,6 +18,19 @@ on:
       features:
         description: FEATURES passed to build.sh
         default: adblock wol zerotier dropbear
+      cr8818:
+        description: CR8818 hardware-layer firmware (kernel + drivers) version
+        type: choice
+        default: '6.20.58'
+        options:
+          - '6.20.58'
+          - '6.21.96'
+      cr8818_url:
+        description: 'override: full CR8818 firmware URL (blank = use the version above)'
+        default: ''
+      ra82_url:
+        description: RA82 international userspace firmware URL
+        default: https://cdn.awsde0-fusion.fds.api.mi-img.com/xiaoqiang/rom/ra82/miwifi_ra82_firmware_db06e_1.4.31_INT.bin
   push:
     tags: ['v*', 'fw-*']
 
@@ -26,9 +39,10 @@ permissions:
 
 env:
   COUNTRY: ${{ inputs.country || 'VN' }}
-  FEATURES: ${{ inputs.features || 'adblock wol zerotier dropbear sshfallback' }}
-  RA82_URL: https://cdn.awsde0-fusion.fds.api.mi-img.com/xiaoqiang/rom/ra82/miwifi_ra82_firmware_db06e_1.4.31_INT.bin
-  CR8818_URL: http://cdn.cnbj1.fds.api.mi-img.com/xiaoqiang/rom/cr8818/miwifi_cr8818_firmware_4f56a_6.20.58.bin
+  FEATURES: ${{ inputs.features || 'adblock wol zerotier dropbear' }}
+  RA82_URL_DEFAULT: https://cdn.awsde0-fusion.fds.api.mi-img.com/xiaoqiang/rom/ra82/miwifi_ra82_firmware_db06e_1.4.31_INT.bin
+  CR8818_URL_62058: http://cdn.cnbj1.fds.api.mi-img.com/xiaoqiang/rom/cr8818/miwifi_cr8818_firmware_4f56a_6.20.58.bin
+  CR8818_URL_62196: https://cdn.cnbj1.fds.api.mi-img.com/xiaoqiang/rom/cr8818/miwifi_cr8818_firmware_f158d_6.21.96.bin
   ZT_VERSION: 1.14.2
   DB_VERSION: 2026.94
 
@@ -45,8 +59,23 @@ jobs:
             squashfs-tools mtd-utils fakeroot openssl patch curl git make \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
 
-      - name: Download official firmware (RA82 INT + CR8818 6.20.58)
+      - name: Download firmware (RA82 userspace + chosen CR8818 hardware layer)
+        env:
+          IN_RA82_URL: ${{ inputs.ra82_url }}
+          IN_CR8818: ${{ inputs.cr8818 }}
+          IN_CR8818_URL: ${{ inputs.cr8818_url }}
         run: |
+          RA82_URL=${IN_RA82_URL:-$RA82_URL_DEFAULT}
+          if [ -n "$IN_CR8818_URL" ]; then
+            CR8818_URL=$IN_CR8818_URL; CR_VER=custom
+          elif [ "$IN_CR8818" = 6.21.96 ]; then
+            CR8818_URL=$CR8818_URL_62196; CR_VER=6.21.96
+          else
+            CR8818_URL=$CR8818_URL_62058; CR_VER=6.20.58
+          fi
+          echo "CR_VER=$CR_VER" >> "$GITHUB_ENV"   # for the release notes
+          echo "==> CR8818 hardware layer: $CR_VER"
+          echo "==> $CR8818_URL"
           mkdir -p dl
           curl -fL --retry 5 --retry-all-errors -o dl/ra82.bin   "$RA82_URL"
           curl -fL --retry 5 --retry-all-errors -o dl/cr8818.bin "$CR8818_URL"
@@ -108,7 +137,7 @@ jobs:
           else
             TAG="fw-${ROMVER}-${BUILD}-${SHORT}"
           fi
-          TITLE="CR881x RA82 ${ROMVER} — build ${BUILD}"
+          TITLE="CR881x RA82 ${ROMVER} · CR8818 ${CR_VER} — build ${BUILD}"
           cat > notes.md <<EOF
           Xiaomi CR881x — RA82 international mod
 
@@ -131,7 +160,7 @@ jobs:
           | Features | \`$FEATURES\` |
           | CountryCode | \`${COUNTRY:-(giữ nguyên)}\` |
           | Userspace | RA82 INT 1.4.31 (CDN chính thức) |
-          | Hardware layer | CR8818 6.20.58 (CDN chính thức) |
+          | Hardware layer | CR8818 ${CR_VER} |
 
           ## Nạp (đang có SSH vào router — stock hoặc OpenWrt)
 

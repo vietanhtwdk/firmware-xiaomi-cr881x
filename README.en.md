@@ -117,11 +117,14 @@ dump and no secret**: it downloads both the RA82 and CR8818 6.20.58 firmware fro
 Xiaomi's CDN, builds the static ARMv7 ZeroTier/dropbear binaries, generates a
 random root password and writes it into the release.
 
-* Run it from **Actions → build firmware → Run workflow** (pick `country`,
-  `features`), or push a `v*` / `fw-*` tag.
-* It publishes a **Release** with the `.ubi` + `.sha256` attached and the
-  **default password** (SSH + web) in the notes. That password is public on a
-  public repo — change it with `passwd` right after the first login.
+* Run it from **Actions → build firmware → Run workflow**. You can pick
+  `country`, `features`, the **`cr8818`** hardware layer (6.20.58 or 6.21.96),
+  and optionally override the firmware URLs (`cr8818_url`, `ra82_url`). Or push a
+  `v*` / `fw-*` tag.
+* Each build is its own **Release** (the tag and title carry a *build id* —
+  `date.run` + commit) with the `.ubi` + `.sha256` attached and the **default
+  password** (SSH + web) in the notes. That password is public on a public repo —
+  change it with `passwd` right after the first login.
 
 ## Flashing
 

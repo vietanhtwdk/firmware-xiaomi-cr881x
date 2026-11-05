@@ -114,11 +114,13 @@ GitHub, **không cần dump hay secret**: workflow tải cả firmware RA82 lẫ
 6.20.58 từ CDN Xiaomi, tự dựng binary ZeroTier/dropbear (static ARMv7), sinh
 mật khẩu root ngẫu nhiên và ghi vào release.
 
-* Chạy: tab **Actions → build firmware → Run workflow** (chọn `country`,
-  `features`), hoặc push tag `v*` / `fw-*`.
-* Kết quả: một **Release** đính kèm `.ubi` + `.sha256`, phần mô tả ghi **mật
-  khẩu mặc định** (SSH + web). Mật khẩu này công khai trên repo công khai — đổi
-  ngay bằng `passwd` sau lần đăng nhập đầu.
+* Chạy: tab **Actions → build firmware → Run workflow**. Chọn được: `country`,
+  `features`, lớp phần cứng **`cr8818`** (6.20.58 hoặc 6.21.96), và tùy chọn ghi
+  đè URL firmware (`cr8818_url`, `ra82_url`). Hoặc push tag `v*` / `fw-*`.
+* Kết quả: mỗi lần build là một **Release** riêng (tag + tiêu đề mang *build id*
+  `ngày.run` + commit), đính kèm `.ubi` + `.sha256`, mô tả ghi **mật khẩu mặc
+  định** (SSH + web). Mật khẩu này công khai trên repo công khai — đổi ngay bằng
+  `passwd` sau lần đăng nhập đầu.
 
 ## Nạp
 

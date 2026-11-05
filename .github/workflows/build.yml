@@ -17,7 +17,7 @@ on:
         default: VN
       features:
         description: FEATURES passed to build.sh
-        default: adblock wol zerotier dropbear sshfallback
+        default: adblock wol zerotier dropbear
   push:
     tags: ['v*', 'fw-*']
 

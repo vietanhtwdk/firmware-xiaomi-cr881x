@@ -212,15 +212,25 @@ The identity and joined networks live in `/data/zerotier`: kept across reboots,
 lost on a `/data` format or reset (the router then gets a new node ID and must
 be re-authorized).
 
+**Off by default** (so it does not sit in RAM unused). Turn it on with a flag in
+`/data` (persists across reboots), off by removing it:
+
+```sh
+mkdir -p /data/zerotier && touch /data/zerotier/enabled   # on
+rm /data/zerotier/enabled; /etc/init.d/zerotier stop       # off
+```
+
 ### ZeroTier setup
 
 1. Create a network on [ZeroTier Central](https://my.zerotier.com) and note the
    **Network ID** (16 hex chars). The examples below use the ZeroTier range
    `10.147.17.0/24` and the router LAN `192.168.31.0/24`.
 
-2. On the router (SSH), check the service and join:
+2. On the router (SSH), enable the service and join:
 
    ```sh
+   mkdir -p /data/zerotier && touch /data/zerotier/enabled
+   /etc/init.d/zerotier start
    zerotier-cli info                    # 200 info <node id> 1.14.2 ONLINE
    zerotier-cli join <network id>
    ```
@@ -274,10 +284,9 @@ be re-authorized).
 7. Test from another ZeroTier member: `ping 10.147.17.1`, open
    `http://10.147.17.1`, then `ping 192.168.31.x` if you did step 6.
 
-Leave a network: `zerotier-cli leave <network id>`. Disable entirely
-(`/etc/rc.d` is read-only, so `disable` does not work):
-`touch /data/zerotier/disabled; /etc/init.d/zerotier stop`.
-Re-enable: `rm /data/zerotier/disabled; /etc/init.d/zerotier start`.
+Leave a network: `zerotier-cli leave <network id>`. Turn the service off
+entirely (`/etc/rc.d` is read-only, so the flag file is the switch, not
+`disable`): `rm /data/zerotier/enabled; /etc/init.d/zerotier stop`.
 
 For images built before `/var/lib/zerotier-one` → `/data/zerotier`, run
 `ln -sfn /data/zerotier /var/lib/zerotier-one` (lost on reboot) or use

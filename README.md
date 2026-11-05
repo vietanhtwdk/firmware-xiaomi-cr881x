@@ -205,15 +205,25 @@ ZEROTIER_BIN=out/zerotier-one COUNTRY=VN ROOT_PASSWORD='...' ./build.sh <ra82.bi
 Identity và mạng đã join lưu ở `/data/zerotier`: giữ qua reboot, mất khi format
 `/data` hoặc reset (khi đó router có node ID mới, phải duyệt lại).
 
+**Mặc định TẮT** (không ngốn RAM khi chưa dùng). Bật bằng flag ở `/data` (giữ
+qua reboot), tắt bằng cách xoá flag:
+
+```sh
+mkdir -p /data/zerotier && touch /data/zerotier/enabled   # bật
+rm /data/zerotier/enabled; /etc/init.d/zerotier stop       # tắt
+```
+
 ### Setup ZeroTier
 
 1. Tạo mạng trên [ZeroTier Central](https://my.zerotier.com), ghi lại
    **Network ID** (16 ký tự hex). Ví dụ dưới dùng dải ZeroTier `10.147.17.0/24`
    và LAN của router `192.168.31.0/24`.
 
-2. Trên router (SSH), kiểm tra dịch vụ và join mạng:
+2. Trên router (SSH), bật dịch vụ rồi join mạng:
 
    ```sh
+   mkdir -p /data/zerotier && touch /data/zerotier/enabled
+   /etc/init.d/zerotier start
    zerotier-cli info                    # 200 info <node id> 1.14.2 ONLINE
    zerotier-cli join <network id>
    ```

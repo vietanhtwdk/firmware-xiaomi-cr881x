@@ -1,9 +1,13 @@
 #!/bin/sh /etc/rc.common
-# ZeroTier One. Join a network once with:
+# ZeroTier One. Off by default so it does not sit in RAM unused; turn it on
+# (persists, /data survives reboot) with:
+#   mkdir -p /data/zerotier && touch /data/zerotier/enabled
+#   /etc/init.d/zerotier start
 #   zerotier-cli join <network id>
-# Identity and joined networks persist in /data/zerotier: on Xiaomi
-# firmware only a few /etc entries are bind-mounted from /data.
-# rc.d is read-only, so disable with: touch /data/zerotier/disabled
+# Turn it back off with: rm /data/zerotier/enabled; /etc/init.d/zerotier stop
+# Identity and joined networks persist in /data/zerotier: on Xiaomi firmware
+# only a few /etc entries are bind-mounted from /data. rc.d is read-only, so
+# the on/off switch is this flag file, not enable/disable.
 
 START=90
 USE_PROCD=1
@@ -11,7 +15,7 @@ USE_PROCD=1
 HOME_DIR=/data/zerotier
 
 start_service() {
-	[ -f "$HOME_DIR/disabled" ] && return 0
+	[ -f "$HOME_DIR/enabled" ] || return 0
 
 	mkdir -p "$HOME_DIR" /var/lib
 	# zerotier-cli looks for its auth token in the default home

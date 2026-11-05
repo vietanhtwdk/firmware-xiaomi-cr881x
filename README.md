@@ -165,9 +165,14 @@ nvram commit
 reboot
 ```
 
-* U-Boot chọn slot theo `flag_boot_rootfs` và `flag_last_success`; hai cờ phải
-  cùng giá trị. **Không có rollback tự động**: nếu bản mới không boot, cần UART.
-  `flag_ota_reboot` không làm U-Boot đổi slot.
+* U-Boot chọn slot theo `flag_boot_rootfs`/`flag_last_success` (hai cờ phải cùng
+  giá trị) và dùng `flag_try_sysN_failed` làm watchdog: trước khi boot một slot
+  nó coi như "đang thử", chỉ khi boot tới cùng thì `boot_check` (START=99, chạy
+  cuối) mới xoá cờ và ghi `flag_last_success`. **Có rollback tự động**: nếu bản
+  mới không boot tới cùng, cờ "đang thử" còn nguyên nên lần bật lại U-Boot tự
+  nhảy về slot last-success. Giữ ROM gốc ở slot kia là lưới an toàn — flash hỏng
+  chỉ cần bật/tắt nguồn, **không cần UART** (UART chỉ khi cả hai slot hỏng hoặc
+  env U-Boot lỗi). `flag_ota_reboot` không tự làm U-Boot đổi slot.
 * `flag_format_overlay=1`: hai slot dùng chung phân vùng cấu hình `overlay`
   (mtd20, mount ở `/data`). `/etc/passwd`, `/etc/shadow`, `/etc/config`... chỉ
   được chép từ ROM vào `/data` khi `/data` vừa format. **Bắt buộc** khi chuyển

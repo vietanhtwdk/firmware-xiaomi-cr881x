@@ -158,7 +158,10 @@ jobs:
           reboot
           \`\`\`
 
-          ⚠️ **Không có rollback tự động** — bản mới không boot thì cần UART.
+          ✅ **Có rollback tự động**: U-Boot đánh dấu "đang thử" slot trước khi
+          boot, chỉ khi boot tới cùng mới xoá (boot_check). Slot mới hỏng →
+          bật/tắt nguồn, U-Boot tự về slot cũ. Giữ ROM ở mtd18 là lưới an toàn;
+          UART chỉ cần khi **cả hai** slot hỏng.
           \`flag_format_overlay=1\` để firmware chép cấu hình/mật khẩu vào \`/data\`;
           chỉ bỏ khi cập nhật từ chính bản build này. Chi tiết: README.
           EOF

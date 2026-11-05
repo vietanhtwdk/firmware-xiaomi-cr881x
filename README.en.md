@@ -169,9 +169,15 @@ nvram commit
 reboot
 ```
 
-* U-Boot picks the slot from `flag_boot_rootfs` and `flag_last_success`; both
-  flags must match. **No automatic rollback**: if the new image fails to boot
-  you need UART. `flag_ota_reboot` does not change the slot.
+* U-Boot picks the slot from `flag_boot_rootfs`/`flag_last_success` (both flags
+  must match) and uses `flag_try_sysN_failed` as a watchdog: it marks a slot as
+  "being tried" before booting it, and only a full boot clears the flag and sets
+  `flag_last_success` (via `boot_check`, START=99, which runs last). **It does
+  roll back automatically**: if the new image fails to boot through, the "trying"
+  flag stays set, so on the next power-up U-Boot falls back to the last-success
+  slot. Keeping stock in the other slot is the safety net — a bad flash only
+  needs a power cycle, **no UART** (UART is only for when both slots are broken
+  or the U-Boot env is corrupt). `flag_ota_reboot` does not change the slot.
 * `flag_format_overlay=1`: both slots share the `overlay` config partition
   (mtd20, mounted at `/data`). `/etc/passwd`, `/etc/shadow`, `/etc/config`… are
   only copied from the ROM into `/data` when `/data` was just formatted.
